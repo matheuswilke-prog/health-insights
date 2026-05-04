@@ -323,11 +323,7 @@ jobs:
           # 2 retries: testes instrumentados em CI têm falhas intermitentes por
           # timing/animações mesmo com disable-animations=true. 2 tentativas
           # eliminam ~95% dos flakes sem custo excessivo de tempo.
-          script: |
-            ./gradlew :app:connectedDebugAndroidTest \
-              --continue \
-              --stacktrace \
-              -Pandroid.testInstrumentationRunnerArguments.retryCount=2
+          script: ./gradlew :app:connectedDebugAndroidTest --continue --stacktrace -Pandroid.testInstrumentationRunnerArguments.retryCount=2
 
       - name: Upload resultados dos testes instrumentados
         if: always()

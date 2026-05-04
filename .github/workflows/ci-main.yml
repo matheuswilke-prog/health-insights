@@ -287,11 +287,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            ./gradlew :app:connectedDebugAndroidTest \
-              --continue \
-              --stacktrace \
-              -Pandroid.testInstrumentationRunnerArguments.retryCount=2
+          script: ./gradlew :app:connectedDebugAndroidTest --continue --stacktrace -Pandroid.testInstrumentationRunnerArguments.retryCount=2
 
       - name: Upload resultados
         if: always()
