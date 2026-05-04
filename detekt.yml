@@ -1,0 +1,10 @@
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - 'Composable'
+
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreNamedArgument: true

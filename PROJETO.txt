@@ -82,3 +82,5 @@ O projeto conta com um time de agentes AI especializados para apoiar decisões:
   CISO — Privacidade, segurança e conformidade com LGPD
 
 Os agentes ficam em: .claude/agents/
+
+Linha extra de teste

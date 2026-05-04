@@ -57,10 +57,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar ktlint
-        run: ./gradlew ktlintCheck --continue --stacktrace
+        run: ./gradlew :app:ktlintCheck --continue --stacktrace
 
       - name: Rodar detekt
-        run: ./gradlew detekt --continue --stacktrace
+        run: ./gradlew :app:detekt --continue --stacktrace
 
       - name: Upload relatório detekt
         if: always()
@@ -104,12 +104,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar testes unitários
-        run: ./gradlew testDebugUnitTest --continue --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --continue --stacktrace
 
       - name: Gerar e verificar cobertura Kover
         # THRESHOLD BOOTSTRAP: 0% enquanto não há código.
         # Ver comentário completo no ci-pr.yml → job unit-test.
-        run: ./gradlew koverXmlReport koverVerify --stacktrace
+        run: ./gradlew :app:koverXmlReport :app:koverVerify --stacktrace
 
       - name: Upload relatório de testes
         if: always()
@@ -161,7 +161,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar Android Lint
-        run: ./gradlew lintDebug --continue --stacktrace
+        run: ./gradlew :app:lintDebug --continue --stacktrace
 
       - name: Upload relatório Android Lint
         if: always()
@@ -205,7 +205,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Compilar APK debug
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
       - name: Upload APK debug
         uses: actions/upload-artifact@v4
@@ -287,11 +287,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
-          script: |
-            ./gradlew connectedDebugAndroidTest \
-              --continue \
-              --stacktrace \
-              -Pandroid.testInstrumentationRunnerArguments.retryCount=2
+          script: ./gradlew :app:connectedDebugAndroidTest --continue --stacktrace -Pandroid.testInstrumentationRunnerArguments.retryCount=2
 
       - name: Upload resultados
         if: always()
@@ -360,7 +356,7 @@ jobs:
       # em nenhum log de Gradle nem em variáveis de ambiente globais.
       - name: Compilar e assinar AAB release
         run: |
-          ./gradlew bundleRelease \
+          ./gradlew :app:bundleRelease \
             --stacktrace \
             -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
