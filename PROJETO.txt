@@ -1,0 +1,84 @@
+HEALTH INSIGHTS — VISÃO DO PROJETO
+=====================================
+
+O QUE É
+--------
+Health Insights é um aplicativo Android que transforma os dados brutos do Samsung Health
+em insights claros e acionáveis. Em vez de só exibir números, o app explica o que eles
+significam para a saúde do usuário — tendências semanais, correlações entre sono e
+desempenho, variação da frequência cardíaca ao longo do tempo, e muito mais.
+
+O PROBLEMA QUE RESOLVE
+-----------------------
+O Samsung Health coleta dados ricos (passos, sono, frequência cardíaca, treinos,
+nutrição), mas sua interface nativa mostra apenas registros isolados. O usuário vê
+"8.432 passos hoje" mas não sabe se isso é bom, ruim, melhor ou pior do que sua
+semana anterior. Não há contexto, não há tendência, não há insight.
+
+Health Insights preenche esse vazio: lê os dados do Samsung Health e os transforma
+em dashboards com gráficos, tendências e análises que o usuário consegue entender
+e agir sobre eles.
+
+PARA QUEM É
+-----------
+Usuários de dispositivos Samsung que já usam o Samsung Health ativamente mas
+sentem que os dados coletados não viram conhecimento útil. Pessoas que querem
+entender sua saúde — não apenas registrá-la.
+
+DIFERENCIAIS
+------------
+- Foco em INSIGHTS, não em registros: cada tela começa com a conclusão,
+  não com os números brutos.
+- 100% on-device: os dados de saúde nunca saem do aparelho. Sem nuvem,
+  sem sync, sem conta obrigatória.
+- Privacidade como feature: conforme LGPD e os Termos de Uso do Samsung Health.
+- Interface nativa Android com Jetpack Compose — rápida, fluida, familiar.
+
+STACK TÉCNICA (planejada)
+--------------------------
+- Linguagem: Kotlin
+- UI: Jetpack Compose
+- Arquitetura: MVVM + Clean Architecture
+- Dados: Samsung Health SDK / Android Health Connect
+- Banco local: Room + SQLCipher (criptografado)
+- DI: Hilt
+- Async: Coroutines + Flow
+
+FUNCIONALIDADES PREVISTAS (v1)
+-------------------------------
+1. Dashboard principal — resumo diário com os principais indicadores
+2. Tendências de Passos — gráfico semanal/mensal com meta e contexto
+3. Análise de Sono — duração, qualidade e tendência
+4. Frequência Cardíaca — histórico e variação em repouso
+5. Resumo Semanal — insight consolidado de toda a semana
+
+MONETIZAÇÃO
+-----------
+Freemium: funcionalidades básicas gratuitas + desbloqueio único (one-time purchase)
+para histórico estendido, exportação de dados e insights avançados.
+
+CONFORMIDADE
+------------
+- LGPD (Lei Geral de Proteção de Dados — Lei 13.709/2018)
+- Samsung Health API Terms of Use
+- Google Play Health Data Policy
+- Consentimento explícito para acesso a dados de saúde
+- Direito de exclusão de dados implementado desde o v1
+
+STATUS ATUAL
+------------
+Fase de definição. Arquitetura, stack e roadmap em planejamento.
+Nenhuma linha de código escrita ainda.
+
+EQUIPE DE AGENTES AI (C-Suite)
+-------------------------------
+O projeto conta com um time de agentes AI especializados para apoiar decisões:
+
+  CEO  — Visão, roadmap e priorização
+  CTO  — Decisões técnicas e arquitetura
+  CPO  — UX, especificação de features e fluxos
+  CMO  — Posicionamento, ASO e aquisição de usuários
+  CFO  — Monetização, precificação e análise de custos
+  CISO — Privacidade, segurança e conformidade com LGPD
+
+Os agentes ficam em: .claude/agents/

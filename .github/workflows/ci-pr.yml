@@ -1,0 +1,349 @@
+# ci-pr.yml — Quality gate para Pull Requests direcionados a main
+#
+# Roda em todo PR aberto, sincronizado ou reaberto contra main.
+# Todos os jobs devem passar para que o PR possa ser mergeado
+# (configurar como required checks na branch protection do GitHub).
+#
+# Arquitetura de jobs:
+#   lint → unit-test → android-lint → build-check → ui-test
+#
+# Os jobs são intencionalmente sequenciais: erros baratos (lint) são
+# detectados primeiro para não desperdiçar minutos de CI em jobs caros
+# (emulador) quando o código nem compila.
+
+name: PR Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+    # Roda também quando o título/descrição do PR muda, pois o YAML
+    # de workflow pode ter sido modificado no próprio PR.
+    types: [opened, synchronize, reopened]
+
+# Cancela runs anteriores do mesmo PR automaticamente.
+# Evita desperdício de minutos quando o dev faz push rápido.
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # JOB 1: lint
+  # Roda ktlint (estilo) + detekt (análise estática) em todos os módulos.
+  # Falha rápido antes de qualquer compilação.
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (ktlint + detekt)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          # Fetch profundidade mínima — não precisamos do histórico completo para lint.
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          # Cache do JDK embutido no action — não duplicar com actions/cache.
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          # A chave inclui o hash de libs.versions.toml e todos os *.gradle.kts.
+          # Qualquer mudança de dependência invalida o cache corretamente.
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar ktlint
+        # ktlintCheck roda em todos os módulos via task agregada raiz.
+        # Se o módulo não tiver plugin ktlint, a task simplesmente não existe
+        # e o Gradle a ignora sem falhar.
+        run: ./gradlew ktlintCheck --continue --stacktrace
+
+      - name: Rodar detekt
+        # --continue garante que todos os módulos são verificados mesmo
+        # quando um já falhou, gerando um relatório completo de uma vez.
+        run: ./gradlew detekt --continue --stacktrace
+
+      - name: Upload relatório detekt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-report
+          path: '**/build/reports/detekt/'
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: unit-test
+  # Roda os testes unitários de todos os módulos e coleta cobertura via Kover.
+  # ---------------------------------------------------------------------------
+  unit-test:
+    name: Unit Tests + Kover Coverage
+    runs-on: ubuntu-latest
+    needs: lint  # Só roda se lint passou.
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar testes unitários
+        run: ./gradlew testDebugUnitTest --continue --stacktrace
+
+      - name: Gerar relatório Kover
+        # koverXmlReport agrega cobertura de todos os módulos em um XML único.
+        # Falha se a cobertura estiver abaixo dos thresholds configurados.
+        run: ./gradlew koverXmlReport --stacktrace
+
+      # THRESHOLD DE COBERTURA — BOOTSTRAP
+      # Durante o bootstrap do projeto (antes de haver código real), o threshold
+      # está em 0% para não bloquear o pipeline.
+      # Quando os primeiros UseCases e ViewModels estiverem implementados,
+      # altere o build.gradle.kts raiz para:
+      #   koverReport { verify { rule { minBound(80) } } }
+      # e remova este comentário.
+      - name: Verificar threshold Kover
+        run: ./gradlew koverVerify --stacktrace
+
+      - name: Upload relatório de testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: '**/build/reports/tests/testDebugUnitTest/'
+          retention-days: 7
+
+      - name: Upload relatório Kover (XML + HTML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kover-coverage-report
+          path: |
+            **/build/reports/kover/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # JOB 3: android-lint
+  # Android Lint detecta problemas específicos de Android (recursos, APIs,
+  # acessibilidade, segurança) que ktlint/detekt não cobrem.
+  # ---------------------------------------------------------------------------
+  android-lint:
+    name: Android Lint
+    runs-on: ubuntu-latest
+    needs: unit-test
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar Android Lint
+        # lintDebug roda em todos os módulos que têm o plugin Android.
+        # Módulos Kotlin puro (ex: :core:domain) são ignorados naturalmente.
+        run: ./gradlew lintDebug --continue --stacktrace
+
+      - name: Upload relatório Android Lint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-report
+          path: '**/build/reports/lint-results-debug.*'
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # JOB 4: build-check
+  # Verifica que o APK debug compila sem erros.
+  # Não faz upload do APK — apenas valida que o build fecha.
+  # ---------------------------------------------------------------------------
+  build-check:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    needs: android-lint
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Compilar APK debug
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK debug (para inspeção manual se necessário)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # JOB 5: ui-test
+  # Testes instrumentados no emulador Android (API 34, x86_64, Pixel 6).
+  # É o job mais caro — roda por último, só se todo o resto passou.
+  #
+  # Por que ubuntu-latest e não macos?
+  # - GitHub Actions suporta KVM no ubuntu-latest desde 2023, permitindo
+  #   emuladores x86_64 acelerados sem custo de minutos macOS (10x mais caro).
+  # ---------------------------------------------------------------------------
+  ui-test:
+    name: UI Tests (Emulador API 34)
+    runs-on: ubuntu-latest
+    needs: build-check
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # Habilita KVM no runner ubuntu-latest para acelerar o emulador.
+      # Sem KVM, os testes instrumentados podem levar 20-40min e são instáveis.
+      - name: Habilitar KVM (aceleração de hardware)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      # Cache da imagem do emulador separado do cache Gradle.
+      # A imagem AVD (~500MB) muda raramente — cache próprio evita re-download.
+      - name: Cache AVD
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api34-${{ runner.os }}-pixel6
+
+      - name: Criar AVD (se não estiver em cache)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          # heap 2048MB evita crashes de OOM em testes pesados de Compose.
+          heap-size: 2048
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: echo "AVD criado e em cache."
+
+      - name: Rodar testes instrumentados
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          heap-size: 2048
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          # 2 retries: testes instrumentados em CI têm falhas intermitentes por
+          # timing/animações mesmo com disable-animations=true. 2 tentativas
+          # eliminam ~95% dos flakes sem custo excessivo de tempo.
+          script: |
+            ./gradlew connectedDebugAndroidTest \
+              --continue \
+              --stacktrace \
+              -Pandroid.testInstrumentationRunnerArguments.retryCount=2
+
+      - name: Upload resultados dos testes instrumentados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: '**/build/outputs/androidTest-results/'
+          retention-days: 7

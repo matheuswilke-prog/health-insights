@@ -1,0 +1,411 @@
+# ci-main.yml — Pipeline pós-merge em main
+#
+# Roda após cada push em main (ou seja, após cada PR mergeado).
+# Vai além do PR gate: gera o Android App Bundle de release assinado
+# e prepara o artefato para publicação na Play Store.
+#
+# Arquitetura de jobs:
+#   lint → unit-test → android-lint → build-check → ui-test → build-release
+#
+# Os 5 primeiros jobs são idênticos ao ci-pr.yml (sem concurrency cancel,
+# pois main nunca deve ter run cancelado — queremos o histórico completo).
+#
+# SEGURANÇA DE SECRETS:
+# - Secrets NUNCA aparecem em variáveis de ambiente globais (env:).
+# - Secrets são referenciados apenas dentro dos steps que precisam deles.
+# - O arquivo keystore é criado em um path temporário e deletado no step
+#   de cleanup com `if: always()` — garante remoção mesmo em caso de falha.
+
+name: Main CI + Release Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # JOB 1: lint — idêntico ao PR gate
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (ktlint + detekt)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar ktlint
+        run: ./gradlew ktlintCheck --continue --stacktrace
+
+      - name: Rodar detekt
+        run: ./gradlew detekt --continue --stacktrace
+
+      - name: Upload relatório detekt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-report
+          path: '**/build/reports/detekt/'
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: unit-test — idêntico ao PR gate
+  # ---------------------------------------------------------------------------
+  unit-test:
+    name: Unit Tests + Kover Coverage
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar testes unitários
+        run: ./gradlew testDebugUnitTest --continue --stacktrace
+
+      - name: Gerar e verificar cobertura Kover
+        # THRESHOLD BOOTSTRAP: 0% enquanto não há código.
+        # Ver comentário completo no ci-pr.yml → job unit-test.
+        run: ./gradlew koverXmlReport koverVerify --stacktrace
+
+      - name: Upload relatório de testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: '**/build/reports/tests/testDebugUnitTest/'
+          retention-days: 14
+
+      - name: Upload relatório Kover
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kover-coverage-report
+          path: '**/build/reports/kover/'
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # JOB 3: android-lint — idêntico ao PR gate
+  # ---------------------------------------------------------------------------
+  android-lint:
+    name: Android Lint
+    runs-on: ubuntu-latest
+    needs: unit-test
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Rodar Android Lint
+        run: ./gradlew lintDebug --continue --stacktrace
+
+      - name: Upload relatório Android Lint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-report
+          path: '**/build/reports/lint-results-debug.*'
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # JOB 4: build-check — idêntico ao PR gate
+  # ---------------------------------------------------------------------------
+  build-check:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    needs: android-lint
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Compilar APK debug
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # JOB 5: ui-test — idêntico ao PR gate
+  # ---------------------------------------------------------------------------
+  ui-test:
+    name: UI Tests (Emulador API 34)
+    runs-on: ubuntu-latest
+    needs: build-check
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      - name: Cache AVD
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api34-${{ runner.os }}-pixel6
+
+      - name: Criar AVD (se não estiver em cache)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          heap-size: 2048
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: echo "AVD criado."
+
+      - name: Rodar testes instrumentados
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          heap-size: 2048
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            ./gradlew connectedDebugAndroidTest \
+              --continue \
+              --stacktrace \
+              -Pandroid.testInstrumentationRunnerArguments.retryCount=2
+
+      - name: Upload resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: '**/build/outputs/androidTest-results/'
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # JOB 6: build-release
+  # Compila o Android App Bundle de release, assina com o keystore de produção
+  # e faz upload para o internal track da Play Store.
+  #
+  # SIGNING FLOW (seguro):
+  # 1. O keystore é armazenado como secret KEYSTORE_BASE64 (base64 do .jks).
+  # 2. No step de decode, o conteúdo base64 é decodificado para um arquivo
+  #    temporário em /tmp — FORA do diretório de trabalho do Git.
+  # 3. O path do arquivo é salvo numa variável de ambiente do job ($GITHUB_ENV)
+  #    para que os steps seguintes saibam onde ele está.
+  # 4. O step de cleanup (if: always()) deleta o arquivo ao final do job,
+  #    independente de sucesso ou falha.
+  # ---------------------------------------------------------------------------
+  build-release:
+    name: Build Release AAB + Sign
+    runs-on: ubuntu-latest
+    needs: ui-test
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Tornar gradlew executável
+        run: chmod +x ./gradlew
+
+      # Decodifica o keystore de base64 para arquivo temporário.
+      # O path gerado por mktemp é único por run — sem colisão entre runs paralelos.
+      - name: Decodificar keystore
+        run: |
+          KEYSTORE_PATH=$(mktemp /tmp/keystore-XXXXXX.jks)
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$KEYSTORE_PATH"
+          # Exporta o path para steps seguintes via GITHUB_ENV.
+          # O arquivo em si nunca é logado — apenas o path (que é aleatório).
+          echo "KEYSTORE_PATH=$KEYSTORE_PATH" >> $GITHUB_ENV
+
+      # Compila e assina o AAB de release.
+      # As propriedades de signing são passadas como -P para não aparecerem
+      # em nenhum log de Gradle nem em variáveis de ambiente globais.
+      - name: Compilar e assinar AAB release
+        run: |
+          ./gradlew bundleRelease \
+            --stacktrace \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+
+      - name: Upload AAB release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          # O AAB assinado fica em app/build/outputs/bundle/release/
+          path: app/build/outputs/bundle/release/app-release.aab
+          # Retenção menor para artefatos de release — são grandes e o arquivo
+          # definitivo deve viver na Play Console, não no GitHub.
+          retention-days: 5
+
+      # UPLOAD PARA O INTERNAL TRACK DA PLAY STORE
+      # -------------------------------------------------
+      # STUB — DESCOMENTADO QUANDO PLAY CONSOLE ESTIVER CONFIGURADO
+      #
+      # Pré-requisitos antes de ativar:
+      #   1. Criar service account no Google Cloud Console com papel
+      #      "Usuário da API do Google Play" na Play Console.
+      #   2. Baixar o JSON da service account e salvar como secret
+      #      PLAY_SERVICE_ACCOUNT_JSON no GitHub.
+      #   3. Garantir que o app já existe na Play Console (upload manual
+      #      da primeira versão é obrigatório antes de usar a API).
+      #
+      # - name: Upload para Play Store (internal track)
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.healthinsights.app
+      #     releaseFiles: app/build/outputs/bundle/release/app-release.aab
+      #     track: internal
+      #     status: draft
+      #     # status: draft — não publica automaticamente, apenas envia para revisão.
+      #     # Mude para "completed" quando o processo de revisão estiver estável.
+
+      # Cleanup do keystore — SEMPRE executa, mesmo se o build falhou.
+      # Garante que o arquivo temporário não persiste no runner.
+      - name: Deletar keystore temporário
+        if: always()
+        run: |
+          if [ -n "$KEYSTORE_PATH" ] && [ -f "$KEYSTORE_PATH" ]; then
+            rm -f "$KEYSTORE_PATH"
+            echo "Keystore temporário removido."
+          fi
