@@ -67,15 +67,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar ktlint
-        # ktlintCheck roda em todos os módulos via task agregada raiz.
-        # Se o módulo não tiver plugin ktlint, a task simplesmente não existe
-        # e o Gradle a ignora sem falhar.
-        run: ./gradlew ktlintCheck --continue --stacktrace
+        run: ./gradlew :app:ktlintCheck --continue --stacktrace
 
       - name: Rodar detekt
-        # --continue garante que todos os módulos são verificados mesmo
-        # quando um já falhou, gerando um relatório completo de uma vez.
-        run: ./gradlew detekt --continue --stacktrace
+        run: ./gradlew :app:detekt --continue --stacktrace
 
       - name: Upload relatório detekt
         if: always()
@@ -120,22 +115,18 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar testes unitários
-        run: ./gradlew testDebugUnitTest --continue --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --continue --stacktrace
 
       - name: Gerar relatório Kover
-        # koverXmlReport agrega cobertura de todos os módulos em um XML único.
-        # Falha se a cobertura estiver abaixo dos thresholds configurados.
-        run: ./gradlew koverXmlReport --stacktrace
+        run: ./gradlew :app:koverXmlReportDebug --stacktrace
 
       # THRESHOLD DE COBERTURA — BOOTSTRAP
       # Durante o bootstrap do projeto (antes de haver código real), o threshold
       # está em 0% para não bloquear o pipeline.
       # Quando os primeiros UseCases e ViewModels estiverem implementados,
-      # altere o build.gradle.kts raiz para:
-      #   koverReport { verify { rule { minBound(80) } } }
-      # e remova este comentário.
+      # altere o app/build.gradle.kts para adicionar regras de threshold no kover.
       - name: Verificar threshold Kover
-        run: ./gradlew koverVerify --stacktrace
+        run: ./gradlew :app:koverVerifyDebug --stacktrace
 
       - name: Upload relatório de testes
         if: always()
@@ -190,9 +181,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Rodar Android Lint
-        # lintDebug roda em todos os módulos que têm o plugin Android.
-        # Módulos Kotlin puro (ex: :core:domain) são ignorados naturalmente.
-        run: ./gradlew lintDebug --continue --stacktrace
+        run: ./gradlew :app:lintDebug --continue --stacktrace
 
       - name: Upload relatório Android Lint
         if: always()
@@ -238,7 +227,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Compilar APK debug
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
 
       - name: Upload APK debug (para inspeção manual se necessário)
         uses: actions/upload-artifact@v4
@@ -335,7 +324,7 @@ jobs:
           # timing/animações mesmo com disable-animations=true. 2 tentativas
           # eliminam ~95% dos flakes sem custo excessivo de tempo.
           script: |
-            ./gradlew connectedDebugAndroidTest \
+            ./gradlew :app:connectedDebugAndroidTest \
               --continue \
               --stacktrace \
               -Pandroid.testInstrumentationRunnerArguments.retryCount=2
