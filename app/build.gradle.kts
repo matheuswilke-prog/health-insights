@@ -43,6 +43,11 @@ android {
     }
 }
 
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/detekt.yml"))
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
