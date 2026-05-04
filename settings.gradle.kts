@@ -24,3 +24,16 @@ dependencyResolutionManagement {
 
 rootProject.name = "Health Insights"
 include(":app")
+include(":core:common")
+include(":core:data")
+include(":core:database")
+include(":core:domain")
+include(":core:network")
+include(":core:ui")
+include(":feature:dashboard")
+include(":feature:health-connect")
+include(":feature:insights")
+include(":feature:onboarding")
+include(":feature:settings")
+include(":feature:sleep")
+include(":feature:workouts")
