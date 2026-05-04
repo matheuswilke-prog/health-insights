@@ -118,7 +118,7 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest --continue --stacktrace
 
       - name: Gerar relatório Kover
-        run: ./gradlew :app:koverXmlReportDebug --stacktrace
+        run: ./gradlew :app:koverXmlReport --stacktrace
 
       # THRESHOLD DE COBERTURA — BOOTSTRAP
       # Durante o bootstrap do projeto (antes de haver código real), o threshold
@@ -126,7 +126,7 @@ jobs:
       # Quando os primeiros UseCases e ViewModels estiverem implementados,
       # altere o app/build.gradle.kts para adicionar regras de threshold no kover.
       - name: Verificar threshold Kover
-        run: ./gradlew :app:koverVerifyDebug --stacktrace
+        run: ./gradlew :app:koverVerify --stacktrace
 
       - name: Upload relatório de testes
         if: always()
