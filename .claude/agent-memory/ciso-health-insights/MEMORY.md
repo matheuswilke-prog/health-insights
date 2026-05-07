@@ -1,0 +1,6 @@
+- [Modelo de consentimento Tela 4 — aprovado 2026-05-05](project_consent_model_decision.md) — 1 tela com 3 toggles + descrição inline + default OFF é compliant; condições mínimas registradas.
+- [Escopo de dados v1.1 pós-pivot](project_data_scope_pivot.md) — Calorias gastas, NutritionRecord, Peso, Treinos. Passos/sono/FC removidos.
+- [Princípios de consentimento — scroll vs. ação afirmativa](feedback_consent_principles.md) — scroll é prova de leitura, não consentimento; granularidade tem que ser real.
+- [Riscos de compliance abertos](project_open_compliance_risks.md) — Privacy Policy desatualizada, chave SQLCipher/Keystore, root detection, encryption do registro de consent.
+- [Classificação LGPD: daily_calorie_target e dados Tela 2](project_lgpd_classification_calls.md) — derivados e antropométricos tratados como Art. 11; microcopy de T2 insuficiente, exige link para Policy.
+- [Documentos legais — localização canônica](reference_legal_docs.md) — onde estão os specs e copies versionados.

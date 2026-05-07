@@ -1,9 +1,9 @@
 # Política de Privacidade — Health Insights
 <!-- Documento: privacy-policy-v1.md -->
 
-**Versão:** v1.0
-**Data de vigência:** 2026-05-04
-**Última atualização:** 2026-05-04
+**Versão:** v1.2
+**Data de vigência:** 2026-05-05
+**Última atualização:** 2026-05-05
 
 ---
 
@@ -49,11 +49,11 @@ O Health Insights acessa as seguintes categorias de dados, todas provenientes do
 
 | # | Tipo de dado | Registro Health Connect | Classificação LGPD |
 |---|---|---|---|
-| 1 | **Passos** — contagem de passos por período (diário e histórico) | `StepsRecord` | Dado de saúde — Art. 11 |
-| 2 | **Sono** — duração e horários de cada sessão de sono | `SleepSessionRecord` | Dado de saúde — Art. 11 |
-| 3 | **Frequência cardíaca em repouso** — medições de BPM em repouso | `RestingHeartRateRecord` | Dado de saúde — Art. 11 |
-| 4 | **Frequência cardíaca** — medições de BPM ao longo do dia | `HeartRateRecord` | Dado de saúde — Art. 11 |
-| 5 | **Exercício** — tipo de atividade e duração de cada sessão (sem GPS, sem rota) | `ExerciseSessionRecord` | Dado de saúde — Art. 11 |
+| 1 | **Calorias gastas** — gasto calórico total e ativo por dia | `TotalCaloriesBurned`, `ActiveCaloriesBurned` | Dado de saúde — Art. 11 |
+| 2 | **Ingestão calórica** — total de calorias registradas pelo usuário ou por outro app (quando disponível) | `NutritionRecord` | Dado de saúde — Art. 11 |
+| 3 | **Peso** — medições de peso corporal ao longo do tempo | `WeightRecord` | Dado de saúde — Art. 11 |
+| 4 | **Treinos** — tipo de atividade física e duração de cada sessão (sem GPS, sem rota) | `ExerciseSessionRecord` | Dado de saúde — Art. 11 |
+| 5 | **Meta calórica diária** — valor derivado de TMB + gasto médio + objetivo; calculado pelo app e armazenado localmente | Local (Room/SQLCipher) | Dado de saúde inferido — Art. 11 |
 
 Adicionalmente, o aplicativo armazena localmente:
 
@@ -61,7 +61,7 @@ Adicionalmente, o aplicativo armazena localmente:
 |---|---|---|
 | 6 | **Registro de consentimento** — data, hora, versão da política aceita e tipo de dado autorizado | Comprovação da base legal de tratamento (Art. 7, § 5 e Art. 11, II, a da LGPD) |
 
-**O aplicativo NÃO coleta, em nenhuma circunstância:** nome, e-mail, CPF, telefone, localização geográfica, endereço IP, identificadores de dispositivo (IMEI, Android ID, GAID), dados de câmera ou microfone, dados de nutrição, dados clínicos (glicose, pressão arterial, saturação de oxigênio), dados financeiros, histórico de navegação, cookies, ou qualquer outro dado não listado acima.
+**O aplicativo NÃO coleta, em nenhuma circunstância:** nome, e-mail, CPF, telefone, localização geográfica, endereço IP, identificadores de dispositivo (IMEI, Android ID, GAID), dados de câmera ou microfone, dados clínicos (glicose, pressão arterial, saturação de oxigênio), dados financeiros, histórico de navegação, cookies, ou qualquer outro dado não listado acima.
 
 ---
 
@@ -73,23 +73,27 @@ Adicionalmente, o aplicativo armazena localmente:
 
 O tratamento de cada tipo de dado serve às seguintes finalidades específicas:
 
-### 4.1 Passos (`StepsRecord`)
+### 4.1 Calorias gastas (`TotalCaloriesBurned`, `ActiveCaloriesBurned`)
 
-Exibição da contagem diária de passos; cálculo de médias, tendências semanais e comparações entre períodos; visualização do progresso de atividade física ao longo do tempo na tela inicial do app.
+Cálculo do gasto calórico diário do usuário; exibição do balanço calórico (gasto menos ingestão); base para calcular a meta de ingestão recomendada conforme o objetivo do usuário (emagrecer, manter ou ganhar massa). O app não realiza interpretações clínicas ou diagnósticos.
 
-### 4.2 Sono (`SleepSessionRecord`)
+### 4.2 Ingestão calórica (`NutritionRecord`)
 
-Exibição da duração de cada noite de sono; cálculo de médias e variações de padrões de sono; identificação de tendências de regularidade de horários de dormir e acordar ao longo das semanas.
+Complemento do balanço calórico diário: soma a ingestão registrada ao gasto calórico para mostrar déficit ou superávit. Quando o dado não está disponível no Health Connect, o usuário pode lançar refeições manualmente — esses lançamentos manuais também ficam armazenados localmente no dispositivo.
 
-### 4.3 Frequência cardíaca em repouso e frequência cardíaca (`RestingHeartRateRecord` + `HeartRateRecord`)
+### 4.3 Peso (`WeightRecord`)
 
-Exibição do histórico de frequência cardíaca em repouso ao longo do tempo; visualização de variações para acompanhamento pessoal do usuário. O app não realiza interpretações clínicas, diagnósticos ou avaliações médicas.
+Exibição da evolução do peso corporal ao longo do tempo; correlação da variação de peso com o balanço calórico calculado pelo app. O app não realiza interpretações clínicas, não calcula IMC e não emite avaliações médicas.
 
-### 4.4 Exercício (`ExerciseSessionRecord`)
+### 4.4 Treinos (`ExerciseSessionRecord`)
 
-Exibição do histórico de sessões de atividade física com tipo e duração; inclusão dos dias de exercício no resumo semanal de atividades; visualização da frequência de prática ao longo do tempo. Apenas o tipo e a duração são lidos — GPS e dados de rota não são acessados.
+Validação e contextualização do gasto calórico ativo diário; exibição da frequência de treinos ao longo do tempo. Apenas o tipo de atividade e a duração são lidos — GPS, rota percorrida, localização, velocidade, ritmo e frequência cardíaca durante a atividade não são acessados.
 
-### 4.5 Registro de consentimento
+### 4.5 Meta calórica diária (dado derivado local)
+
+A meta calórica diária é calculada pelo app a partir da Taxa Metabólica Basal (dados de perfil do usuário) e do gasto calórico médio dos últimos 15 dias. Esse valor derivado é armazenado localmente e usado para exibir o balanço do dia e a tendência de evolução de peso.
+
+### 4.6 Registro de consentimento
 
 Comprovação de que o consentimento foi obtido de forma válida, com registro do tipo de dado autorizado, da data e da versão da política aceita, conforme exigência dos Art. 7, § 5, e Art. 11, II, a da LGPD.
 
@@ -272,6 +276,8 @@ O histórico de versões desta Política é mantido no repositório do aplicativ
 | Versão | Data | Tipo de alteração |
 |---|---|---|
 | v1.0 | 2026-05-04 | Versão inicial — Health Insights MVP |
+| v1.1 | 2026-05-05 | Pivot de produto: substituídos Passos, Sono e FC por Calorias, Peso e Treinos. Adicionada Meta calórica diária como dado derivado (Art. 11). |
+| v1.2 | 2026-05-05 | Correção não material: removidos Passos, Sono e Frequência cardíaca da lista "NÃO coleta" (incialmente omitidos na v1.1; o app detém permissões de leitura para esses tipos no Health Connect). |
 
 ---
 
@@ -309,6 +315,6 @@ Para resolução de conflitos, fica eleito o foro da comarca de domicílio do co
 
 ---
 
-*Health Insights — Política de Privacidade v1.0*
-*Vigente a partir de 2026-05-04*
+*Health Insights — Política de Privacidade v1.2*
+*Vigente a partir de 2026-05-05*
 *Controlador: Matheus Wilke — matheus.wilke@gmail.com*
