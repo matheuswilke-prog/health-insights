@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
 // NavHost — extracted for testability
 // ─────────────────────────────────────────────────────────────────────────────
 
+@Suppress("LongMethod") // NavHost functions enumerate all routes — structural length is expected
 @Composable
 internal fun HealthInsightsNavHost(
     navController: NavHostController,
