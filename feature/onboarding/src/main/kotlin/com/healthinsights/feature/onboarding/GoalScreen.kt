@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.healthinsights.core.domain.model.BiologicalSex
 import com.healthinsights.core.domain.model.UserGoal
 import com.healthinsights.core.domain.model.UserProfile
+import com.healthinsights.core.domain.usecase.CalculateBmrUseCase
 import com.healthinsights.core.domain.usecase.CalculateDailyTargetUseCase
 import com.healthinsights.core.ui.theme.HealthInsightsSemantic
 import com.healthinsights.core.ui.theme.HealthInsightsTheme
@@ -338,7 +339,7 @@ private fun GoalCard(
 /** Computes daily calorie target for the given profile + goal. Pure, no side effects. */
 @Composable
 private fun rememberDailyTarget(profileData: ProfileFormData, goal: UserGoal): Int {
-    val useCase = CalculateDailyTargetUseCase()
+    val useCase = CalculateDailyTargetUseCase(CalculateBmrUseCase())
     val profile = UserProfile(
         weightKg = profileData.weightKg,
         heightCm = profileData.heightCm,
