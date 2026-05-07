@@ -12,7 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w412dp-h892dp-xxhdpi")
 class WelcomeScreenTest {
 
     @get:Rule
@@ -22,7 +22,7 @@ class WelcomeScreenTest {
     fun displaysHeadline() {
         composeRule.setContent { WelcomeScreen(onContinue = {}) }
         composeRule
-            .onNodeWithText("Saiba se está em déficit ou superávit calórico.")
+            .onNodeWithText("Seu balanço calórico,\nsem planilha.")
             .assertIsDisplayed()
     }
 
@@ -31,7 +31,7 @@ class WelcomeScreenTest {
         composeRule.setContent { WelcomeScreen(onContinue = {}) }
         composeRule
             .onNodeWithText(
-                "O Health Insights conecta seus dados do Samsung Health e mostra, em números, se você está perdendo, mantendo ou ganhando peso.",
+                "Lemos o Samsung Health e mostramos, em números, se você está perdendo, mantendo ou ganhando peso.",
                 substring = true,
             )
             .assertIsDisplayed()
@@ -41,7 +41,7 @@ class WelcomeScreenTest {
     fun displaysPrivacyMicrocopy() {
         composeRule.setContent { WelcomeScreen(onContinue = {}) }
         composeRule
-            .onNodeWithText("Seus dados ficam só no seu aparelho.")
+            .onNodeWithText("Seus dados ficam no aparelho. Sem nuvem, sem conta.")
             .assertIsDisplayed()
     }
 
