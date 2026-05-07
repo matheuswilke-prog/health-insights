@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CalculateDailyTargetUseCaseTest {
-    private val useCase = CalculateDailyTargetUseCase()
+    private val useCase = CalculateDailyTargetUseCase(CalculateBmrUseCase())
 
     // Base profile: 80 kg, 180 cm, 30 y, Male
     // BMR = 1780 kcal (verified in CalculateBmrUseCaseTest::male_typical)
