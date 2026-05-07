@@ -1,0 +1,4 @@
+- [Storage de daily_calorie_target](decision_storage_calorie_target.md) — Room+SQLCipher para derivados biométricos; DataStore plain só para flags não-reguladas
+- [Navigation graph do onboarding](decision_onboarding_navigation.md) — nested graph + popUpTo no route do graph + retomada via last_completed_step
+- [EncryptedSharedPreferences rejeitado](decision_encrypted_prefs_rejected.md) — só como wrapper de passphrase do SQLCipher, nunca destino primário de dado de saúde
+- [Specs e copy vivos](reference_specs.md) — onboarding-spec-v1.0, consent-copy-v1.1, PROJETO.txt, CLAUDE.md

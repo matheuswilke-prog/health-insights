@@ -1,0 +1,5 @@
+- [Product pivot — calorie deficit tracker](project_pivot_calorie_tracker.md) — Produto deixou de ser "insights gerais" e virou tracker de déficit/superávit calórico (decidido 2026-05-05).
+- [Onboarding decisions from founder](project_onboarding_decisions.md) — Respostas do founder em 2026-05-05 às 4 perguntas de onboarding do CPO.
+- [Consent screen conflict open](project_consent_conflict.md) — Founder pediu 1 tela com toggles; consent-copy-v1.md exige 1 tela por tipo. Aguarda CISO.
+- [Consent copy scope drift](project_consent_copy_scope_drift.md) — consent-copy-v1.md cobre passos/sono/FC/exercício; produto agora foca calorias/peso. Requer nova versão.
+- [Founder profile](user_founder.md) — Solo dev, fala português, prefere especificações concretas e sem hand-waving.

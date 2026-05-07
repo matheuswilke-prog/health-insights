@@ -1,0 +1,1 @@
+- [Decisão — remover entrada manual de refeições](decision_remove_manual_food_entry.md) — CEO recomendou adiar remoção até confirmar disponibilidade de NutritionRecord no Health Connect para usuário-alvo brasileiro (2026-05-05).
