@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.flow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import javax.inject.Inject
 
 /**
  * Returns a [Flow] emitting the [DailyCaloricBalance] for [date].
@@ -26,47 +27,49 @@ import java.time.ZoneId
  *   - intake == 0 → status = [BalanceStatus.NoIntakeData] (user hasn't synced a food-log app).
  *   - HC unavailable → activeBurned = 0, intake = 0 → NoIntakeData.
  */
-class GetDailyBalanceUseCase(
-    private val userProfileRepository: UserProfileRepository,
-    private val healthConnectRepository: HealthConnectRepository,
-    private val calculateBmr: CalculateBmrUseCase = CalculateBmrUseCase(),
-    private val calculateDailyTarget: CalculateDailyTargetUseCase = CalculateDailyTargetUseCase(),
-    private val zone: ZoneId = ZoneId.systemDefault(),
-) {
-    operator fun invoke(date: LocalDate): Flow<DailyCaloricBalance> =
-        flow {
-            val profile =
-                userProfileRepository.get().first()
-                    ?: error("UserProfile not set — onboarding must complete before reading balance.")
+class GetDailyBalanceUseCase
+    @Inject
+    constructor(
+        private val userProfileRepository: UserProfileRepository,
+        private val healthConnectRepository: HealthConnectRepository,
+        private val calculateBmr: CalculateBmrUseCase,
+        private val calculateDailyTarget: CalculateDailyTargetUseCase,
+        private val zone: ZoneId = ZoneId.systemDefault(),
+    ) {
+        operator fun invoke(date: LocalDate): Flow<DailyCaloricBalance> =
+            flow {
+                val profile =
+                    userProfileRepository.get().first()
+                        ?: error("UserProfile not set — onboarding must complete before reading balance.")
 
-            val dayStart: Instant = date.atStartOfDay(zone).toInstant()
-            val dayEnd: Instant = date.plusDays(1).atStartOfDay(zone).toInstant()
+                val dayStart: Instant = date.atStartOfDay(zone).toInstant()
+                val dayEnd: Instant = date.plusDays(1).atStartOfDay(zone).toInstant()
 
-            val bmr = calculateBmr(profile)
-            val target = calculateDailyTarget(profile)
-            val activeBurned = healthConnectRepository.getActiveCaloriesBurned(dayStart, dayEnd).toInt()
-            val intake = healthConnectRepository.getNutritionCalories(dayStart, dayEnd).toInt()
+                val bmr = calculateBmr(profile)
+                val target = calculateDailyTarget(profile)
+                val activeBurned = healthConnectRepository.getActiveCaloriesBurned(dayStart, dayEnd).toInt()
+                val intake = healthConnectRepository.getNutritionCalories(dayStart, dayEnd).toInt()
 
-            val balance = intake - (bmr + activeBurned)
+                val balance = intake - (bmr + activeBurned)
 
-            val status: BalanceStatus =
-                when {
-                    intake == 0 -> BalanceStatus.NoIntakeData
-                    balance < -MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Deficit
-                    balance > MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Surplus
-                    else -> BalanceStatus.Maintain
-                }
+                val status: BalanceStatus =
+                    when {
+                        intake == 0 -> BalanceStatus.NoIntakeData
+                        balance < -MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Deficit
+                        balance > MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Surplus
+                        else -> BalanceStatus.Maintain
+                    }
 
-            emit(
-                DailyCaloricBalance(
-                    date = date,
-                    bmr = bmr,
-                    activeBurned = activeBurned,
-                    intake = intake,
-                    target = target,
-                    balance = balance,
-                    status = status,
-                ),
-            )
-        }
-}
+                emit(
+                    DailyCaloricBalance(
+                        date = date,
+                        bmr = bmr,
+                        activeBurned = activeBurned,
+                        intake = intake,
+                        target = target,
+                        balance = balance,
+                        status = status,
+                    ),
+                )
+            }
+    }

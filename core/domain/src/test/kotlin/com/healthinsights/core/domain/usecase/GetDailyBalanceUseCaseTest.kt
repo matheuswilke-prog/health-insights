@@ -130,6 +130,8 @@ class GetDailyBalanceUseCaseTest {
         return GetDailyBalanceUseCase(
             userProfileRepository = profileRepo,
             healthConnectRepository = hcRepo,
+            calculateBmr = CalculateBmrUseCase(),
+            calculateDailyTarget = CalculateDailyTargetUseCase(CalculateBmrUseCase()),
             zone = ZoneId.of("America/Sao_Paulo"),
         )
     }

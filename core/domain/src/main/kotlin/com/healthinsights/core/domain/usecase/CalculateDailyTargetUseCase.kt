@@ -2,6 +2,7 @@ package com.healthinsights.core.domain.usecase
 
 import com.healthinsights.core.domain.model.UserGoal
 import com.healthinsights.core.domain.model.UserProfile
+import javax.inject.Inject
 
 /**
  * Calculates the daily calorie target based on BMR, sedentary multiplier, and goal.
@@ -16,24 +17,26 @@ import com.healthinsights.core.domain.model.UserProfile
  *
  * @throws IllegalArgumentException if profile fields are invalid (delegated to CalculateBmrUseCase).
  */
-class CalculateDailyTargetUseCase(
-    private val calculateBmr: CalculateBmrUseCase = CalculateBmrUseCase(),
-) {
-    operator fun invoke(profile: UserProfile): Int {
-        val bmr = calculateBmr(profile)
-        val tdee = (bmr * SEDENTARY_MULTIPLIER).toInt()
-        val adjustment =
-            when (profile.goal) {
-                UserGoal.LOSE -> GOAL_LOSE_ADJUSTMENT
-                UserGoal.MAINTAIN -> 0
-                UserGoal.GAIN -> GOAL_GAIN_ADJUSTMENT
-            }
-        return tdee + adjustment
-    }
+class CalculateDailyTargetUseCase
+    @Inject
+    constructor(
+        private val calculateBmr: CalculateBmrUseCase,
+    ) {
+        operator fun invoke(profile: UserProfile): Int {
+            val bmr = calculateBmr(profile)
+            val tdee = (bmr * SEDENTARY_MULTIPLIER).toInt()
+            val adjustment =
+                when (profile.goal) {
+                    UserGoal.LOSE -> GOAL_LOSE_ADJUSTMENT
+                    UserGoal.MAINTAIN -> 0
+                    UserGoal.GAIN -> GOAL_GAIN_ADJUSTMENT
+                }
+            return tdee + adjustment
+        }
 
-    private companion object {
-        const val SEDENTARY_MULTIPLIER = 1.375
-        const val GOAL_LOSE_ADJUSTMENT = -500
-        const val GOAL_GAIN_ADJUSTMENT = +300
+        private companion object {
+            const val SEDENTARY_MULTIPLIER = 1.375
+            const val GOAL_LOSE_ADJUSTMENT = -500
+            const val GOAL_GAIN_ADJUSTMENT = +300
+        }
     }
-}
