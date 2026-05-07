@@ -7,6 +7,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":feature:health-connect"))
+    implementation(project(":core:domain"))
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.compose.ui.test.junit4)

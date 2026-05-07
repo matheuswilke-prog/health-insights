@@ -16,8 +16,12 @@ dependencies {
     implementation(project(":feature:health-connect"))
     implementation(project(":feature:onboarding"))
     implementation(project(":core:database"))
+    implementation(project(":core:domain"))
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
