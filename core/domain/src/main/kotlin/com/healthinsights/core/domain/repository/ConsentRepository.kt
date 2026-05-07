@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface ConsentRepository {
     fun getAll(): Flow<List<ConsentRecord>>
+
     suspend fun save(record: ConsentRecord)
+
     suspend fun clearAll()
 }

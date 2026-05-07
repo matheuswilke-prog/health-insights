@@ -1,0 +1,95 @@
+/* Health Insights — Design Tokens */
+:root {
+  /* Backgrounds */
+  --bg: #FAFAF7;
+  --bg-elev: #FFFFFF;
+  --bg-sunken: #F2F1EC;
+  --bg-card: #FFFFFF;
+
+  /* Ink */
+  --ink-1: #0E1116;          /* primary text */
+  --ink-2: #3A3F47;          /* secondary text */
+  --ink-3: #6B7079;          /* tertiary / supporting */
+  --ink-4: #9AA0A8;          /* placeholder / disabled */
+  --hairline: rgba(14,17,22,0.08);
+  --hairline-strong: rgba(14,17,22,0.14);
+
+  /* Inverted */
+  --on-dark: #FFFFFF;
+
+  /* Brand */
+  --brand: oklch(0.62 0.12 155);     /* sage / health */
+  --brand-ink: oklch(0.36 0.08 155);
+  --brand-tint: oklch(0.96 0.04 155);
+  --brand-tint-2: oklch(0.92 0.06 155);
+
+  /* Semantic */
+  --deficit: oklch(0.62 0.12 155);   /* losing weight = green */
+  --surplus: oklch(0.68 0.14 35);    /* gaining = warm coral */
+  --maintain: oklch(0.62 0.06 250);  /* steady = muted blue */
+  --warning: oklch(0.78 0.14 75);
+
+  /* Radii */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(14,17,22,0.04), 0 1px 1px rgba(14,17,22,0.03);
+  --shadow-md: 0 4px 16px rgba(14,17,22,0.06), 0 1px 3px rgba(14,17,22,0.04);
+  --shadow-lg: 0 24px 48px -12px rgba(14,17,22,0.18);
+
+  /* Type */
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.num { font-feature-settings: 'tnum' 1, 'cv11' 1; font-variant-numeric: tabular-nums; }
+.tight { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+/* Reusable atoms */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 500; line-height: 1;
+  background: var(--bg-sunken); color: var(--ink-2);
+}
+.chip.brand { background: var(--brand-tint); color: var(--brand-ink); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--hairline);
+}
+
+.btn-primary {
+  height: 56px; border-radius: var(--r-md);
+  background: var(--ink-1); color: var(--on-dark);
+  border: 0; font-family: var(--font-body); font-size: 16px; font-weight: 600;
+  letter-spacing: -0.01em; cursor: pointer; width: 100%;
+}
+.btn-primary.brand { background: var(--brand); }
+.btn-secondary {
+  height: 56px; border-radius: var(--r-md);
+  background: transparent; color: var(--ink-1);
+  border: 1px solid var(--hairline-strong); font-weight: 500;
+  font-size: 16px; cursor: pointer; width: 100%;
+}
+.btn-ghost {
+  height: 44px; padding: 0 12px; border-radius: var(--r-md);
+  background: transparent; color: var(--ink-2);
+  border: 0; font-size: 14px; font-weight: 500; cursor: pointer;
+}
