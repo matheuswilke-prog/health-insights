@@ -56,7 +56,15 @@ Replace `:app:` with any module (e.g., `:core:database:testDebugUnitTest`).
 :feature:sleep / :feature:workouts → Future screens (empty)
 ```
 
-**Implemented so far:** `:app`, `:core:domain`, `:core:database`, `:feature:health-connect`, `:feature:onboarding` (partial — WelcomeScreen only).
+**Implemented so far:**
+- `:app` — NavHost (Welcome → placeholder), Application class, DI root
+- `:core:domain` — domain models (UserProfile, DailyCaloricBalance, BalanceStatus), repository interfaces, usecases (CalculateBmrUseCase, CalculateDailyTargetUseCase, GetDailyBalanceUseCase)
+- `:core:database` — Room + SQLCipher, DAOs, entities
+- `:core:ui` — HealthInsightsTheme, HealthInsightsSemantic (deficit/surplus/maintain colors)
+- `:feature:health-connect` — HealthConnectManager, HealthConnectRepositoryImpl (availability + permissions + data reads: active calories, nutrition, weight)
+- `:feature:onboarding` — WelcomeScreen (Variante A, Apple Health minimal, fiel ao visual-system-v1)
+
+**Pending (Sprint 1+):** ProfileScreen (T2), GoalScreen (T3), ConsentScreen (T4), ConnectingScreen (T5), NavGraph completo, Dashboard (T6), Settings.
 
 ### Convention plugins (`build-logic/src/main/kotlin/`)
 
@@ -101,7 +109,7 @@ SQLCipher key: 32 random bytes generated via `SecureRandom`, stored encrypted in
 
 **Tokens em código:** `core/ui/src/main/kotlin/com/healthinsights/core/ui/theme/Theme.kt` — `HealthInsightsTheme { … }` envolve toda screen. Use `MaterialTheme.colorScheme.*`, nunca `Color(0xFF…)` hardcoded em features.
 
-**Mockups de referência:** projeto Anthropic Designer "health-insights" → `Health Insights.html`. Contém 3 variações por tela. Quando reimplementar uma screen, cite a variante escolhida no PR (ex: "Welcome A — Apple Health minimal").
+**Mockups de referência:** `docs/design/mockups/App.html` — abre no navegador, mostra todas as 6 telas + estados. Depende dos arquivos na mesma pasta (`app-screens.jsx`, `screens.jsx`, `tokens.css`, etc.). Cite a variante no PR (ex: "Welcome A — Apple Health minimal").
 
 **Princípios anti-slop (linha vermelha):**
 1. O número primeiro — headlines liderados por dado, não por adjetivos.
@@ -109,8 +117,6 @@ SQLCipher key: 32 random bytes generated via `SecureRandom`, stored encrypted in
 3. Background neutro `#FAFAF7`. **Banidos:** gradientes saturados, círculos decorativos, roxo `#4F3D8A`.
 4. Microcopy de privacidade visível acima de todo CTA crítico.
 5. Sem ícones decorativos genéricos, sem emojis. Só dado, gráfico ou stripe de placeholder.
-
-**Refactor pendente:** `feature/onboarding/.../WelcomeScreen.kt` está fora do sistema (gradiente roxo + "HI" em círculo + curva inferior). Substituir seguindo `visual-system-v1.md` § 8 antes de iniciar Telas 2–6.
 
 
 ## Test Strategy
@@ -163,9 +169,24 @@ Agent memory is stored per-agent in `.claude/agent-memory/<agent-name>/`.
 ## Key Docs
 
 - `docs/MVP_PLAN.md` — Full MVP scope, architecture decisions, test strategy, rejected features
+- `docs/design/visual-system-v1.md` — Tokens, tipografia, paleta, componentes — fonte da verdade visual
+- `docs/design/mockups/App.html` — Mockups interativos de todas as 6 telas (abrir no navegador)
+- `docs/design/mockups/app-screens.jsx` — Código JSX das telas T2–T6 + Settings (referência de implementação)
 - `docs/specs/onboarding-spec-v1.0.md` — Onboarding screen-by-screen spec
 - `docs/legal/consent-copy-v1.1.md` — Final consent copy (CISO-approved)
 - `docs/legal/POLITICA_DE_PRIVACIDADE.md` — Privacy policy (PT-BR)
 - `docs/BACKLOG.md` — Feature backlog
 - `docs/CI_SETUP.md` — GitHub repo + secrets setup guide
 - `Reunioes/` — Meeting notes and pending tasks by date
+
+## Current Implementation Status (2026-05-07)
+
+| Sprint | Stories | Status |
+|---|---|---|
+| EP-01-01 (foundation) | CI/CD, arquitetura multi-módulo, WelcomeScreen | ✅ merged to main |
+| Sprint 0 (domain) | S0.1 BMR usecases, S0.2 HC data reads, S0.3 DailyCaloricBalance | ✅ merged to main (PR #3) |
+| Sprint 1 (onboarding UI) | S1.1 ProfileScreen, S1.2 GoalScreen, S1.3 ConsentScreen, S1.4 ConnectingScreen, S1.5 NavGraph | ⏳ next — 1 story per session |
+| Sprint 2 (dashboard) | S2.1 DashboardScreen + ViewModel, S2.2 empty/error states | ⏳ blocked on Sprint 1 |
+| Sprint 3 (settings/LGPD) | S3.1–S3.5 Settings + export + delete-all + privacy policy | ⏳ blocked on Sprint 2 |
+
+**Next action:** start a new session for S1.1 (ProfileScreen only). Prompt: "Implementa S1.1 — ProfileScreen (T2). Leia docs/design/mockups/app-screens.jsx (função ProfileScreen) e docs/design/visual-system-v1.md. Use HealthInsightsTheme de core:ui. Testes obrigatórios."
