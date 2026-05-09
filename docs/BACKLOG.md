@@ -4,23 +4,36 @@ Fonte: `docs/ROADMAP.md`. Este backlog e uma lista executavel derivada do roadma
 
 WIP recomendado: 1 story ativa por vez.
 
+Ultima atualizacao operacional: 2026-05-09.
+
 ## Status Atual
 
-Concluido ou parcialmente concluido:
+Concluido:
 - Estrutura Gradle multi-modulo.
 - Convention plugins.
 - Room + SQLCipher para perfil/consentimento.
-- Health Connect wrapper inicial.
+- Health Connect wrapper MVP para Dashboard.
 - Domain use cases de BMR, meta diaria e balanco calorico.
-- Onboarding T1-T5 em implementacao existente.
+- Onboarding T1-T5 com fluxo `Welcome -> Profile -> Goal -> Consent -> Dashboard`.
+- Persistencia sensivel de perfil, meta diaria e consentimentos em Room + SQLCipher ao concluir consentimento.
 - NavHost extraido de `MainActivity`.
 - Tema centralizado em `:core:ui`.
+- Alinhamento documental para `docs/ROADMAP.md`.
+- Dashboard MVP implementado e validado por checks locais.
+- Settings minima de privacidade implementada e validada para alpha local.
 
-Proxima frente: fechar Dashboard MVP e alinhar o fluxo `Welcome -> Profile -> Goal -> Consent -> Dashboard`.
+Proxima frente: fechar as funcoes LGPD antes de release: exportar dados e apagar dados locais.
+
+Pendente para validacao manual antes de alpha:
+- Reexecutar fluxo interativo de permissoes Health Connect no emulador/aparelho.
+- Confirmar visualmente os estados do Dashboard em viewport Android comum.
+- Validar comportamento com Health Connect indisponivel, permissoes revogadas e dados parciais.
 
 ## EP-00 - Alinhamento Documental
 
 ### EP-00-01 - Consolidar Fonte da Verdade
+
+Status: feito.
 
 Prioridade: P0
 
@@ -58,7 +71,7 @@ Aceite:
 
 ### EP-01-03 - Health Connect MVP
 
-Status: base feita, precisa completar leituras conforme Dashboard.
+Status: feito para Dashboard MVP; manter e ampliar apenas quando nova story exigir.
 
 Aceite:
 - Ler calorias gastas.
@@ -73,6 +86,8 @@ Fluxo alvo: `Welcome -> Profile -> Goal -> Consent -> Dashboard`.
 
 ### EP-02-01 - Ajustar Persistencia do Onboarding
 
+Status: feito para o fluxo atual; manter validacao manual antes de alpha.
+
 Prioridade: P0
 
 Problema:
@@ -86,6 +101,8 @@ Aceite:
 
 ### EP-02-02 - Consentimento Granular
 
+Status: feito para o fluxo atual; manter revisao de privacidade antes de alpha.
+
 Prioridade: P0
 
 Aceite:
@@ -97,6 +114,8 @@ Aceite:
 - Sem entrada manual no MVP; permissoes negadas geram estados vazios/indisponiveis no Dashboard.
 
 ### EP-02-03 - Navegacao Pos-Onboarding
+
+Status: feito.
 
 Prioridade: P0
 
@@ -110,6 +129,8 @@ Aceite:
 
 ### EP-03-01 - Contrato de Estado do Dashboard
 
+Status: feito.
+
 Prioridade: P0
 
 Modulo: `:feature:dashboard`
@@ -120,6 +141,8 @@ Aceite:
 - ViewModel nao contem logica de calculo pesada; delega para use cases.
 
 ### EP-03-02 - Conteudo Principal do Dashboard
+
+Status: feito.
 
 Prioridade: P0
 
@@ -133,6 +156,8 @@ Aceite:
 
 ### EP-03-03 - Integracao com Domain
 
+Status: feito.
+
 Prioridade: P0
 
 Aceite:
@@ -142,6 +167,8 @@ Aceite:
 - Testes unitarios cobrem deficit, manutencao, superavit, sem ingestao e Health Connect indisponivel.
 
 ### EP-03-04 - UI Compose do Dashboard
+
+Status: feito.
 
 Prioridade: P1
 
@@ -199,6 +226,8 @@ Futuro:
 
 ## Ordem Recomendada
 
+### Feito no PR atual
+
 1. EP-00-01.
 2. EP-02-01.
 3. EP-02-02.
@@ -208,8 +237,12 @@ Futuro:
 7. EP-03-03.
 8. EP-03-04.
 9. EP-04-01.
-10. EP-04-02.
-11. EP-04-03.
+
+### Proximos passos
+
+1. EP-04-02 - Exportar Dados.
+2. EP-04-03 - Apagar Dados Locais.
+3. Hardening pre-alpha: validacao manual de permissoes/estados, revisao de seguranca/privacidade e checks finais.
 
 ## Definition of Done Padrao
 
