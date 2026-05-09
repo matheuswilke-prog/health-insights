@@ -1,9 +1,9 @@
 # Política de Privacidade — Health Insights
 <!-- Documento: privacy-policy-v1.md -->
 
-**Versão:** v1.2
+**Versão:** v1.3
 **Data de vigência:** 2026-05-05
-**Última atualização:** 2026-05-05
+**Última atualização:** 2026-05-08
 
 ---
 
@@ -79,7 +79,7 @@ Cálculo do gasto calórico diário do usuário; exibição do balanço calóric
 
 ### 4.2 Ingestão calórica (`NutritionRecord`)
 
-Complemento do balanço calórico diário: soma a ingestão registrada ao gasto calórico para mostrar déficit ou superávit. Quando o dado não está disponível no Health Connect, o usuário pode lançar refeições manualmente — esses lançamentos manuais também ficam armazenados localmente no dispositivo.
+Complemento do balanço calórico diário: soma a ingestão registrada ao gasto calórico para mostrar déficit ou superávit. Quando o dado não está disponível no Health Connect, o app informa que a ingestão calórica daquele dia está indisponível e não calcula o balanço completo.
 
 ### 4.3 Peso (`WeightRecord`)
 
@@ -148,14 +148,13 @@ O aplicativo não integra SDKs de terceiros, bibliotecas de rastreamento, coleto
 <!-- LGPD Art. 15 — o tratamento encerra quando o prazo determinado se cumpre ou a finalidade se esgota -->
 <!-- LGPD Art. 16 — após o encerramento, os dados devem ser eliminados -->
 
-Os dados de saúde são armazenados localmente no dispositivo pelo período configurado pelo usuário:
+No MVP, os dados de saúde são armazenados localmente no dispositivo por até 12 meses.
 
 | Período de retenção | Descrição |
 |---|---|
-| **12 meses** | **Padrão — aplicado se o usuário não alterar a configuração** |
-| Configurável | O usuário pode ajustar o período em Configurações → Privacidade → Meus Dados |
+| **12 meses** | **Padrão do MVP** |
 
-Dados mais antigos que o período configurado são excluídos automaticamente pelo aplicativo.
+Dados mais antigos que esse período são excluídos automaticamente pelo aplicativo. Uma configuração para alterar o período de retenção pode ser adicionada em versão futura; se isso mudar o padrão ou a finalidade do tratamento, esta Política será atualizada.
 
 **Exclusão completa ocorre nas seguintes situações:**
 
@@ -277,7 +276,8 @@ O histórico de versões desta Política é mantido no repositório do aplicativ
 |---|---|---|
 | v1.0 | 2026-05-04 | Versão inicial — Health Insights MVP |
 | v1.1 | 2026-05-05 | Pivot de produto: substituídos Passos, Sono e FC por Calorias, Peso e Treinos. Adicionada Meta calórica diária como dado derivado (Art. 11). |
-| v1.2 | 2026-05-05 | Correção não material: removidos Passos, Sono e Frequência cardíaca da lista "NÃO coleta" (incialmente omitidos na v1.1; o app detém permissões de leitura para esses tipos no Health Connect). |
+| v1.2 | 2026-05-05 | Correção não material: removidos Passos, Sono e Frequência cardíaca da lista "NÃO coleta" para não criar compromisso futuro errado. |
+| v1.3 | 2026-05-08 | Alinhamento ao roadmap: removida promessa de lançamento manual de refeições no MVP. |
 
 ---
 
@@ -315,6 +315,6 @@ Para resolução de conflitos, fica eleito o foro da comarca de domicílio do co
 
 ---
 
-*Health Insights — Política de Privacidade v1.2*
+*Health Insights — Política de Privacidade v1.3*
 *Vigente a partir de 2026-05-05*
 *Controlador: Matheus Wilke — matheus.wilke@gmail.com*

@@ -42,6 +42,7 @@ abstract class DatabaseModule {
         fun provideDatabase(
             @ApplicationContext context: Context,
         ): HealthInsightsDatabase {
+            System.loadLibrary("sqlcipher")
             val keyProvider = DatabaseKeyProvider(context)
             val passphrase = keyProvider.getOrCreatePassphrase()
             val factory = SupportOpenHelperFactory(passphrase)

@@ -7,7 +7,6 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.NutritionRecord
-import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
 import com.healthinsights.core.domain.healthconnect.HealthConnectAvailability
 import com.healthinsights.core.domain.healthconnect.HealthDataPermission
@@ -30,6 +29,10 @@ class HealthConnectManager @Inject constructor(
     fun createPermissionRequestContract() =
         PermissionController.createRequestPermissionResultContract()
 
+    suspend fun getGrantedPermissionStrings(): Set<String> {
+        return client?.permissionController?.getGrantedPermissions().orEmpty()
+    }
+
     companion object {
         fun sdkStatusToAvailability(sdkStatus: Int): HealthConnectAvailability = when (sdkStatus) {
             HealthConnectClient.SDK_AVAILABLE -> HealthConnectAvailability.Available
@@ -42,10 +45,8 @@ class HealthConnectManager @Inject constructor(
             .toSet()
 
         fun permissionStringsFor(permission: HealthDataPermission): Set<String> = when (permission) {
-            HealthDataPermission.CALORIES_BURNED -> setOf(
-                HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
-                HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
-            )
+            HealthDataPermission.CALORIES_BURNED ->
+                setOf(HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class))
             HealthDataPermission.CALORIE_INTAKE ->
                 setOf(HealthPermission.getReadPermission(NutritionRecord::class))
             HealthDataPermission.WEIGHT ->

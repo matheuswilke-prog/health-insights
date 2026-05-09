@@ -51,6 +51,14 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+    fun clearOnboardingComplete() {
+        viewModelScope.launch {
+            context.onboardingDataStore.edit { prefs ->
+                prefs[OnboardingPreferencesKeys.ONBOARDING_COMPLETE] = false
+            }
+        }
+    }
 }
 
 internal const val ROUTE_WELCOME = "welcome"
@@ -59,3 +67,4 @@ internal const val ROUTE_GOAL = "goal"
 internal const val ROUTE_CONSENT = "consent"
 internal const val ROUTE_CONNECTING = "connecting"
 internal const val ROUTE_DASHBOARD = "dashboard"
+internal const val ROUTE_SETTINGS = "settings"

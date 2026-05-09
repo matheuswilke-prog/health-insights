@@ -73,9 +73,8 @@ seu balanço calórico (gasto menos ingestão).
 
 Quando esse dado não está disponível: nem todo aparelho ou app
 de saúde grava nutrição no Health Connect. Se o app não encontrar
-esse registro, você poderá lançar suas refeições manualmente
-dentro do Health Insights — esse lançamento manual também fica
-só no seu aparelho.
+esse registro, o Health Insights mostrará que a ingestão calórica
+não está disponível e não calculará o balanço completo daquele dia.
 
 O que o app NÃO lê: nomes de alimentos específicos, fotos de
 refeições, marcas de produto, restrições alimentares, macros
@@ -149,9 +148,8 @@ com criptografia.
 ## Período de retenção
 
 ```
-Seus dados de saúde ficam guardados no seu aparelho por até 12 meses.
-Você pode mudar esse prazo a qualquer momento em
-Configurações → Privacidade → Meus Dados.
+Seus dados de saúde ficam guardados no seu aparelho por até 12 meses
+no MVP. Dados mais antigos que esse prazo são apagados automaticamente.
 
 Quando você desinstalar o app, todos os dados são apagados
 automaticamente.
@@ -188,9 +186,9 @@ Você pode cancelar esta autorização a qualquer momento em
 Configurações → Privacidade → Revogar Acesso à Saúde.
 
 Se você revogar o acesso, o app para de ler novos dados de saúde
-e apaga os dados que já estavam guardados. Você não perde nenhuma
-função do app — apenas as telas que dependem dos dados revogados
-ficarão indisponíveis ou passarão a depender de lançamento manual.
+e apaga os dados que já estavam guardados. Você não perde acesso
+ao app — apenas as telas que dependem dos dados revogados ficarão
+indisponíveis ou mostrarão que não há dados suficientes.
 ```
 
 <!-- LGPD Art. 8, § 5 — o consentimento pode ser revogado a qualquer momento -->
@@ -259,10 +257,10 @@ consentimento válido nos termos da LGPD:
    da informação prévia exigida pelo Art. 9 — não substitui o ato de
    consentimento.
 
-4. **Recusa sem punição.** Tocar "Agora não" leva ao app em modo manual.
-   Tocar "Concordo" com 0 toggles ON é tratado como modo manual após
-   dialog de confirmação. O app não pode bloquear o acesso por negativa
-   de consentimento (Art. 8, § 5).
+4. **Recusa sem punição.** Tocar "Agora não" leva ao Dashboard com os
+   estados de dados indisponíveis correspondentes. Tocar "Concordo" com
+   0 toggles ON é permitido após diálogo de confirmação. O app não pode
+   bloquear o acesso por negativa de consentimento (Art. 8, § 5).
 
 5. **Granularidade real.** Cada toggle dispara o request da permissão
    correspondente do Health Connect de forma independente. Não há
@@ -280,11 +278,9 @@ consentimento válido nos termos da LGPD:
    "o que NÃO lê") exige nova versão e novo consentimento explícito do
    usuário antes do início do tratamento alterado.
 
-8. **Privacy Policy desatualizada.** A `privacy-policy-v1.md` (vigente
-   2026-05-04) ainda lista os tipos de dado da v1.0 (passos, sono, FC).
-   Não é compliant publicar v1.1 do consent-copy sem antes atualizar a
-   policy para refletir o pivot. Bloqueador adicional fora do escopo
-   deste documento — encaminhar para revisão pelo controlador.
+8. **Policy alinhada.** A política vigente para este escopo é
+   `privacy-policy-v1.md`, versão interna v1.3 ou posterior, alinhada ao
+   MVP de balanço calórico e peso definido em `docs/ROADMAP.md`.
 
 ---
 

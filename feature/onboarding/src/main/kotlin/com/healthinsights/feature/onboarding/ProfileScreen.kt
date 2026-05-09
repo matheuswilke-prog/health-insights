@@ -1,6 +1,7 @@
 package com.healthinsights.feature.onboarding
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -31,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +81,7 @@ fun ProfileScreen(
     var weightRaw by rememberSaveable { mutableStateOf("") }
     var heightRaw by rememberSaveable { mutableStateOf("") }
     var ageRaw by rememberSaveable { mutableStateOf("") }
+    var showDataUseDialog by rememberSaveable { mutableStateOf(false) }
 
     // Validation — only show errors after first submit attempt
     var submitted by rememberSaveable { mutableStateOf(false) }
@@ -214,6 +218,9 @@ fun ProfileScreen(
                         textDecoration = TextDecoration.Underline,
                     ),
                     color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .clickable { showDataUseDialog = true }
+                        .testTag("profile_data_use_link"),
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -260,6 +267,10 @@ fun ProfileScreen(
                 Spacer(Modifier.height(16.dp))
             }
         }
+    }
+
+    if (showDataUseDialog) {
+        ProfileDataUseDialog(onDismiss = { showDataUseDialog = false })
     }
 }
 
@@ -366,6 +377,37 @@ private fun FieldLabel(text: String) {
             letterSpacing = 0.6.sp,
         ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun ProfileDataUseDialog(
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Como tratamos esses dados",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
+        text = {
+            Text(
+                text = "Peso, altura, idade e sexo biológico são usados apenas " +
+                    "para estimar seu metabolismo basal e sua meta calórica. " +
+                    "Esses dados ficam salvos somente no aparelho, protegidos " +
+                    "localmente, e não são enviados para servidor, analytics " +
+                    "ou terceiros.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Entendi")
+            }
+        },
     )
 }
 
