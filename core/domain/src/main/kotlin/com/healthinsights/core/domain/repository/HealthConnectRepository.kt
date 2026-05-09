@@ -2,6 +2,7 @@ package com.healthinsights.core.domain.repository
 
 import com.healthinsights.core.domain.healthconnect.HealthConnectAvailability
 import com.healthinsights.core.domain.healthconnect.HealthDataPermission
+import com.healthinsights.core.domain.model.LatestWeight
 import java.time.Instant
 import java.time.LocalDate
 
@@ -24,6 +25,15 @@ interface HealthConnectRepository {
     ): Float
 
     /**
+     * Explicit active-calorie read result for UI flows that need to distinguish
+     * "zero data" from "could not read Health Connect".
+     */
+    suspend fun getActiveCaloriesBurnedResult(
+        start: Instant,
+        end: Instant,
+    ): HealthDataReadResult = HealthDataReadResult.Success(getActiveCaloriesBurned(start, end))
+
+    /**
      * Total calorie intake (from NutritionRecord) in [start, end).
      * Returns 0f when HC is unavailable, permission is not granted, or no food-log app synced.
      */
@@ -31,6 +41,15 @@ interface HealthConnectRepository {
         start: Instant,
         end: Instant,
     ): Float
+
+    /**
+     * Explicit nutrition read result for UI flows that need to distinguish
+     * "no food-log data" from "could not read Health Connect".
+     */
+    suspend fun getNutritionCaloriesResult(
+        start: Instant,
+        end: Instant,
+    ): HealthDataReadResult = HealthDataReadResult.Success(getNutritionCalories(start, end))
 
     /**
      * Active calories burned per day for the last 7 days (date → kcal).
@@ -47,5 +66,15 @@ interface HealthConnectRepository {
     /**
      * Most recent body weight reading from Health Connect (kg), or null if unavailable.
      */
-    suspend fun getLatestWeightKg(): Float?
+    suspend fun getLatestWeight(): LatestWeight?
+
+    suspend fun getLatestWeightKg(): Float? = getLatestWeight()?.valueKg
+}
+
+sealed interface HealthDataReadResult {
+    data class Success(val kcal: Float) : HealthDataReadResult
+
+    data object Unavailable : HealthDataReadResult
+
+    data class Error(val cause: Throwable) : HealthDataReadResult
 }

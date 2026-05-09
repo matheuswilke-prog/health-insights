@@ -28,7 +28,7 @@ data class DailyCaloricBalance(
 ) {
     companion object {
         /** ±100 kcal threshold below which we consider the day as "maintain" to suppress measurement noise. */
-        const val MAINTAIN_THRESHOLD_KCAL = 100
+        const val MAINTAIN_THRESHOLD_KCAL = 250
     }
 }
 
@@ -44,4 +44,7 @@ sealed interface BalanceStatus {
 
     /** No food-log data available for this day. Cannot compute balance. */
     data object NoIntakeData : BalanceStatus
+
+    /** Health Connect was unavailable or failed while reading today's data. */
+    data object HealthConnectUnavailable : BalanceStatus
 }

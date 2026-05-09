@@ -7,6 +7,7 @@ import com.healthinsights.core.domain.model.BiologicalSex
 import com.healthinsights.core.domain.model.UserGoal
 import com.healthinsights.core.domain.model.UserProfile
 import com.healthinsights.core.domain.repository.HealthConnectRepository
+import com.healthinsights.core.domain.repository.HealthDataReadResult
 import com.healthinsights.core.domain.repository.UserProfileRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -19,8 +20,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class GetDailyBalanceUseCaseTest {
-    // Canonical profile: 80 kg, 180 cm, 30 y, Male, MAINTAIN
-    // BMR = 1780, TDEE/target = 2447
     private val baseProfile =
         UserProfile(
             weightKg = 80f,
@@ -36,7 +35,6 @@ class GetDailyBalanceUseCaseTest {
     @Test
     fun deficit_large() =
         runTest {
-            // intake=1500, active=300 → balance = 1500 - (1780+300) = -580 → Deficit
             val balance = useCase(intake = 1500f, active = 300f).invoke(today).first()
             assertEquals(-580, balance.balance)
             assertEquals(BalanceStatus.Deficit, balance.status)
@@ -46,54 +44,70 @@ class GetDailyBalanceUseCaseTest {
         }
 
     @Test
-    fun deficit_weak_within_threshold() =
+    fun deficit_boundary_is_maintenance() =
         runTest {
-            // intake=2030, active=200 → balance = 2030 - (1780+200) = 50 → Maintain (≤100)
-            val balance = useCase(intake = 2030f, active = 200f).invoke(today).first()
-            assertEquals(50, balance.balance)
+            val balance = useCase(intake = 1730f, active = 200f).invoke(today).first()
+            assertEquals(-250, balance.balance)
             assertEquals(BalanceStatus.Maintain, balance.status)
         }
 
     @Test
-    fun surplus() =
+    fun deficit_below_boundary() =
         runTest {
-            // intake=3000, active=200 → balance = 3000 - (1780+200) = 1020 → Surplus
-            val balance = useCase(intake = 3000f, active = 200f).invoke(today).first()
-            assertEquals(1020, balance.balance)
+            val balance = useCase(intake = 1729f, active = 200f).invoke(today).first()
+            assertEquals(-251, balance.balance)
+            assertEquals(BalanceStatus.Deficit, balance.status)
+        }
+
+    @Test
+    fun surplus_boundary_is_maintenance() =
+        runTest {
+            val balance = useCase(intake = 2230f, active = 200f).invoke(today).first()
+            assertEquals(250, balance.balance)
+            assertEquals(BalanceStatus.Maintain, balance.status)
+        }
+
+    @Test
+    fun surplus_above_boundary() =
+        runTest {
+            val balance = useCase(intake = 2231f, active = 200f).invoke(today).first()
+            assertEquals(251, balance.balance)
             assertEquals(BalanceStatus.Surplus, balance.status)
-        }
-
-    @Test
-    fun surplus_weak_within_threshold() =
-        runTest {
-            // intake=2040, active=200 → balance = 2040 - (1780+200) = 60 → Maintain (≤100)
-            val balance = useCase(intake = 2040f, active = 200f).invoke(today).first()
-            assertEquals(60, balance.balance)
-            assertEquals(BalanceStatus.Maintain, balance.status)
         }
 
     @Test
     fun no_intake_data() =
         runTest {
-            // intake=0 → NoIntakeData regardless of active
             val balance = useCase(intake = 0f, active = 500f).invoke(today).first()
             assertEquals(0, balance.intake)
             assertEquals(BalanceStatus.NoIntakeData, balance.status)
         }
 
     @Test
-    fun no_intake_no_active() =
+    fun negative_intake_is_no_intake_data() =
         runTest {
-            // HC fully unavailable: intake=0, active=0 → NoIntakeData
-            val balance = useCase(intake = 0f, active = 0f).invoke(today).first()
+            val balance = useCase(intake = -1f, active = 500f).invoke(today).first()
+            assertEquals(-1, balance.intake)
             assertEquals(BalanceStatus.NoIntakeData, balance.status)
         }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    @Test
+    fun health_connect_unavailable() =
+        runTest {
+            val balance =
+                useCase(
+                    intake = 0f,
+                    active = 0f,
+                    readResult = HealthDataReadResult.Unavailable,
+                ).invoke(today).first()
+
+            assertEquals(BalanceStatus.HealthConnectUnavailable, balance.status)
+        }
 
     private fun useCase(
         intake: Float,
         active: Float,
+        readResult: HealthDataReadResult? = null,
     ): GetDailyBalanceUseCase {
         val profileRepo =
             object : UserProfileRepository {
@@ -116,16 +130,26 @@ class GetDailyBalanceUseCaseTest {
                     end: Instant,
                 ) = active
 
+                override suspend fun getActiveCaloriesBurnedResult(
+                    start: Instant,
+                    end: Instant,
+                ) = readResult ?: HealthDataReadResult.Success(active)
+
                 override suspend fun getNutritionCalories(
                     start: Instant,
                     end: Instant,
                 ) = intake
 
+                override suspend fun getNutritionCaloriesResult(
+                    start: Instant,
+                    end: Instant,
+                ) = readResult ?: HealthDataReadResult.Success(intake)
+
                 override suspend fun getActiveCaloriesByDay(days: List<LocalDate>) = emptyMap<LocalDate, Float>()
 
                 override suspend fun getNutritionByDay(days: List<LocalDate>) = emptyMap<LocalDate, Float>()
 
-                override suspend fun getLatestWeightKg(): Float? = null
+                override suspend fun getLatestWeight() = null
             }
         return GetDailyBalanceUseCase(
             userProfileRepository = profileRepo,

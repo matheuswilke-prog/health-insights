@@ -30,11 +30,10 @@ class HealthConnectManagerTest {
     }
 
     @Test
-    fun `CALORIES_BURNED maps to two distinct permission strings`() {
+    fun `CALORIES_BURNED maps to active calories permission string`() {
         val strings = HealthConnectManager.permissionStringsFor(HealthDataPermission.CALORIES_BURNED)
-        assertEquals(2, strings.size)
-        assertTrue(strings.any { it.contains("TOTAL_CALORIES") })
-        assertTrue(strings.any { it.contains("ACTIVE_CALORIES") })
+        assertEquals(1, strings.size)
+        assertTrue(strings.first().contains("ACTIVE_CALORIES"))
     }
 
     @Test

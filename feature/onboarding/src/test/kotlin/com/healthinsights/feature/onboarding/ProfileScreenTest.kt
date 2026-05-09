@@ -56,6 +56,16 @@ class ProfileScreenTest {
         composeRule.onNodeWithText("Continuar").assertIsDisplayed()
     }
 
+    @Test
+    fun dataUseLink_opensExplanationDialog() {
+        composeRule.setContent { ProfileScreen(onBack = {}, onContinue = {}) }
+
+        composeRule.onNodeWithTag("profile_data_use_link").performClick()
+
+        composeRule.onNodeWithText("Como tratamos esses dados").assertIsDisplayed()
+        composeRule.onNodeWithText("Entendi").assertIsDisplayed()
+    }
+
     // ── CTA / validation tests ────────────────────────────────────────────────
 
     @Test

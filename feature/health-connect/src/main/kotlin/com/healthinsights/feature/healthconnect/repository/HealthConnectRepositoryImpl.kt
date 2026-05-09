@@ -7,13 +7,15 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.healthinsights.core.domain.healthconnect.HealthConnectAvailability
 import com.healthinsights.core.domain.healthconnect.HealthDataPermission
+import com.healthinsights.core.domain.model.LatestWeight
 import com.healthinsights.core.domain.repository.HealthConnectRepository
+import com.healthinsights.core.domain.repository.HealthDataReadResult
 import com.healthinsights.feature.healthconnect.HealthConnectManager
-import javax.inject.Inject
-import javax.inject.Singleton
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class HealthConnectRepositoryImpl @Inject constructor(
@@ -33,8 +35,14 @@ class HealthConnectRepositoryImpl @Inject constructor(
         }.toSet()
     }
 
-    override suspend fun getActiveCaloriesBurned(start: Instant, end: Instant): Float {
-        val client = manager.client ?: return 0f
+    override suspend fun getActiveCaloriesBurned(start: Instant, end: Instant): Float =
+        getActiveCaloriesBurnedResult(start, end).kcalOrZero()
+
+    override suspend fun getActiveCaloriesBurnedResult(
+        start: Instant,
+        end: Instant,
+    ): HealthDataReadResult {
+        val client = manager.client ?: return HealthDataReadResult.Unavailable
         return try {
             val response = client.readRecords(
                 ReadRecordsRequest(
@@ -42,15 +50,20 @@ class HealthConnectRepositoryImpl @Inject constructor(
                     timeRangeFilter = TimeRangeFilter.between(start, end),
                 ),
             )
-            // Log: count=${response.records.size} records read (no numeric values — CISO order)
-            response.records.sumOf { it.energy.inKilocalories }.toFloat()
-        } catch (_: Exception) {
-            0f
+            HealthDataReadResult.Success(response.records.sumOf { it.energy.inKilocalories }.toFloat())
+        } catch (e: Exception) {
+            HealthDataReadResult.Error(e)
         }
     }
 
-    override suspend fun getNutritionCalories(start: Instant, end: Instant): Float {
-        val client = manager.client ?: return 0f
+    override suspend fun getNutritionCalories(start: Instant, end: Instant): Float =
+        getNutritionCaloriesResult(start, end).kcalOrZero()
+
+    override suspend fun getNutritionCaloriesResult(
+        start: Instant,
+        end: Instant,
+    ): HealthDataReadResult {
+        val client = manager.client ?: return HealthDataReadResult.Unavailable
         return try {
             val response = client.readRecords(
                 ReadRecordsRequest(
@@ -60,10 +73,12 @@ class HealthConnectRepositoryImpl @Inject constructor(
             )
             response.records
                 .mapNotNull { it.energy?.inKilocalories }
+                .filter { it > 0.0 }
                 .sum()
                 .toFloat()
-        } catch (_: Exception) {
-            0f
+                .let(HealthDataReadResult::Success)
+        } catch (e: Exception) {
+            HealthDataReadResult.Error(e)
         }
     }
 
@@ -109,7 +124,10 @@ class HealthConnectRepositoryImpl @Inject constructor(
             response.records
                 .groupBy { it.startTime.atZone(zone).toLocalDate() }
                 .mapValues { (_, records) ->
-                    records.mapNotNull { it.energy?.inKilocalories }.sum().toFloat()
+                    records.mapNotNull { it.energy?.inKilocalories }
+                        .filter { it > 0.0 }
+                        .sum()
+                        .toFloat()
                 }
                 .filterKeys { it in days }
         } catch (_: Exception) {
@@ -117,7 +135,7 @@ class HealthConnectRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLatestWeightKg(): Float? {
+    override suspend fun getLatestWeight(): LatestWeight? {
         val client = manager.client ?: return null
         return try {
             val response = client.readRecords(
@@ -131,9 +149,21 @@ class HealthConnectRepositoryImpl @Inject constructor(
                     ascendingOrder = false,
                 ),
             )
-            response.records.firstOrNull()?.weight?.inKilograms?.toFloat()
+            response.records.firstOrNull()?.let { record ->
+                LatestWeight(
+                    valueKg = record.weight.inKilograms.toFloat(),
+                    measuredAt = record.time,
+                )
+            }
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun HealthDataReadResult.kcalOrZero(): Float = when (this) {
+        is HealthDataReadResult.Success -> kcal
+        is HealthDataReadResult.Unavailable,
+        is HealthDataReadResult.Error,
+        -> 0f
     }
 }

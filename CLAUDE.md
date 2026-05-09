@@ -1,192 +1,154 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file guides Claude Code when working in this repository. Keep it mirrored with `AGENTS.md` unless a tool-specific instruction is truly necessary.
 
-## Project
+## Source of Truth
 
-Health Insights is an Android app that reads Samsung Health data (via Health Connect) and transforms it into actionable insights. The product focus is **caloric deficit/surplus tracking for weight loss or gain** — not a general health dashboard. All processing stays on-device. No backend, no accounts, no cloud sync.
+The product and execution source of truth is `docs/ROADMAP.md`.
 
-Target persona: "Marcos", 32, Brazilian, Galaxy Watch owner, trains 3–5x/week, already does manual calorie tracking and wants something more integrated and automatic.
+When planning or implementing work:
+1. Read `docs/ROADMAP.md` first.
+2. Use `docs/BACKLOG.md` only as the executable task list derived from the roadmap.
+3. Use `docs/specs/onboarding-spec-v1.0.md` only for onboarding details.
+4. Do not revive old scope from deleted meeting notes or obsolete MVP docs.
 
-Full product specs: `docs/MVP_PLAN.md`. Current open tasks: `Reunioes/2026-05-05/PENDENCIAS.md`.
+If any document conflicts with `docs/ROADMAP.md`, the roadmap wins.
+
+## Product Direction
+
+Health Insights is an Android app that reads Health Connect data and helps the user understand caloric balance and weight progress.
+
+MVP focus:
+- Caloric balance.
+- Weight progress.
+- Health Connect reads for calories, nutrition, weight and workouts.
+- On-device processing only.
+- No account, no backend, no cloud sync.
+
+Future app vision:
+- Steps, sleep, workouts, heart rate and broader health insights can come after MVP.
+- These future areas must not leak into MVP scope unless `docs/ROADMAP.md` is updated.
+
+## Current MVP Flow
+
+`Welcome -> Profile -> Goal -> Consent -> Dashboard`
+
+There is no separate First Insight screen in the current MVP plan. The Dashboard is the payoff screen and should show daily target, caloric balance and weight context.
+
+Sensitive onboarding data must not be persisted in plain DataStore. Profile, goal, daily target and consent records belong in Room + SQLCipher when the flow is completed. `onboarding_complete` may remain in plain DataStore.
 
 ## Build Commands
 
-Run from `C:\Dev\Claude-Code\Health-insights\` using `gradlew.bat` (Windows) or `./gradlew` (Linux).
+Run from `C:\Dev\Claude-Code\Health-insights`.
 
 ```bash
-# Style and static analysis
-./gradlew :app:ktlintCheck
-./gradlew :app:ktlintFormat
-./gradlew :app:detekt
-./gradlew :app:lintDebug
-
-# Tests
-./gradlew :app:testDebugUnitTest
-./gradlew :app:connectedDebugAndroidTest       # requires emulator/device
-./gradlew :app:koverXmlReport
-./gradlew :app:koverVerify
-
-# Build
+./gradlew ktlintCheck
+./gradlew testDebugUnitTest
 ./gradlew :app:assembleDebug
-./gradlew :app:bundleRelease                   # requires signing config
-
-# Single test class
-./gradlew :module:testDebugUnitTest --tests "com.healthinsights.SomeTest"
+./gradlew :app:lintDebug
+./gradlew :app:connectedDebugAndroidTest
 ```
 
-Replace `:app:` with any module (e.g., `:core:database:testDebugUnitTest`).
+On Windows, use `gradlew.bat`.
 
 ## Architecture
 
-### Module structure
+Modules:
+- `:app`: app composition, NavHost, DI root, Application.
+- `:core:domain`: pure Kotlin domain models, repository interfaces and use cases.
+- `:core:database`: Room + SQLCipher, DAOs, entities and local repository implementations.
+- `:core:ui`: shared Compose theme, tokens and UI components.
+- `:core:common`: shared utilities.
+- `:core:data`, `:core:network`: reserved, currently empty.
+- `:feature:health-connect`: Health Connect wrapper and SDK mapping.
+- `:feature:onboarding`: onboarding screens.
+- `:feature:dashboard`: MVP dashboard.
+- `:feature:settings`: privacy/settings.
+- `:feature:insights`, `:feature:sleep`, `:feature:workouts`: post-MVP placeholders.
 
-```
-:app                       → NavHost, DI root, Application class, Compose theme
-:core:domain               → UseCases, domain models, repository interfaces (pure Kotlin, no Android)
-:core:database             → Room + SQLCipher, DAOs, entities, migrations
-:core:ui                   → Shared Compose components (currently empty — theme lives in :app)
-:core:common               → Shared utilities (currently empty)
-:core:data / :core:network → Currently empty
-:feature:onboarding        → Value prop + LGPD consent screens (WelcomeScreen done, others pending)
-:feature:health-connect    → Health Connect SDK wrapper (isolates SDK from domain layer)
-:feature:dashboard         → Daily caloric balance (empty)
-:feature:insights          → Weekly insight generation (empty)
-:feature:settings          → Consent revocation, export, delete-all (empty)
-:feature:sleep / :feature:workouts → Future screens (empty)
-```
+Layer rules:
+- UI never touches Health Connect SDK types.
+- Health Connect SDK types stay isolated in `:feature:health-connect`.
+- Domain models are not SDK records or database entities.
+- Use UDF: events up, state down.
+- User-facing screens should model `Loading`, `Empty`, `Content` and `Error` states when applicable.
+- No health data in logs.
 
-**Implemented so far:**
-- `:app` — NavHost (Welcome → placeholder), Application class, DI root
-- `:core:domain` — domain models (UserProfile, DailyCaloricBalance, BalanceStatus), repository interfaces, usecases (CalculateBmrUseCase, CalculateDailyTargetUseCase, GetDailyBalanceUseCase)
-- `:core:database` — Room + SQLCipher, DAOs, entities
-- `:core:ui` — HealthInsightsTheme, HealthInsightsSemantic (deficit/surplus/maintain colors)
-- `:feature:health-connect` — HealthConnectManager, HealthConnectRepositoryImpl (availability + permissions + data reads: active calories, nutrition, weight)
-- `:feature:onboarding` — WelcomeScreen (Variante A, Apple Health minimal, fiel ao visual-system-v1)
+## Privacy and Security
 
-**Pending (Sprint 1+):** ProfileScreen (T2), GoalScreen (T3), ConsentScreen (T4), ConnectingScreen (T5), NavGraph completo, Dashboard (T6), Settings.
+Non-negotiables:
+- On-device only.
+- No telemetry SDKs, ads SDKs or hosted crash reporters in MVP.
+- Room + SQLCipher for sensitive health data and derived health data.
+- Android Keystore/EncryptedSharedPreferences for SQLCipher key storage.
+- Consent is explicit, granular, revocable and recorded.
+- Health data must not be logged.
 
-### Convention plugins (`build-logic/src/main/kotlin/`)
+MVP data retention is 12 months by default, as defined in `docs/ROADMAP.md` and the current privacy policy.
 
-| Plugin | Used by |
-|--------|---------|
-| `healthinsights.android.application` | `:app` |
-| `healthinsights.android.library` | Android library modules |
-| `healthinsights.android.library.compose` | Modules with Compose UI |
-| `healthinsights.android.feature` | All `:feature:*` modules — extends `library.compose` + `hilt` |
-| `healthinsights.android.hilt` | Modules using DI |
-| `healthinsights.kotlin.library` | Pure Kotlin modules (`:core:domain`) |
+Legal references:
+- `docs/legal/consent-copy-v1.1.md`
+- `docs/legal/privacy-policy-v1.md`
 
-Convention plugins use `versionCatalogs.named("libs")` (not the type-safe `libs` accessor) because Gradle 9.x doesn't generate type-safe accessors for precompiled script plugins in included builds. Regular module `build.gradle.kts` files use the type-safe `libs.xxx` accessor normally.
+## Design
 
-### Layer rules
+Visual source of truth:
+- `docs/design/visual-system-v1.md`
+- `core/ui/src/main/kotlin/com/healthinsights/core/ui/theme/Theme.kt`
 
-- **Domain models ≠ SDK types** — Health Connect records are mapped to domain models in `:feature:health-connect`. Nothing above that layer touches Health Connect types directly.
-- **UDF only** — UI events bubble up, state flows down. `UiState` is a sealed interface with `Loading | Empty | Content | Error` variants. Every screen must handle all four.
-- **No health data in logs** — Logger must sanitize before output. This is a CISO standing order, not a preference.
+Rules:
+- Screen design is produced by external design tools, usually Claude Design or Figma.
+- Claude Code should provide design prompts and validate returned handoffs; it should not be the main creative design tool.
+- Store design prompts in `docs/design/prompts/`.
+- Store design handoffs in `docs/design/handoffs/`.
+- Use `HealthInsightsTheme` from `:core:ui`.
+- Prefer `MaterialTheme.colorScheme.*` and shared semantic colors.
+- Avoid hardcoded colors in features except previews/tests.
+- No decorative gradients, saturated blobs, emojis or generic decorative icons.
+- Lead with numbers and explicit semantic signals.
+- Privacy microcopy must appear before critical CTAs.
 
-### Storage decisions
+## Development Workflow
 
-| Data type | Storage | Reason |
-|---|---|---|
-| Biometric-derived values, `UserProfileEntity` | Room + SQLCipher | LGPD Art. 11 — biometric derivatives are sensitive health data |
-| Consent records | Room + SQLCipher | Requires timestamp + policy version, tamper-evident |
-| Non-sensitive flags (`onboarding_complete`, theme) | DataStore plain | Not health data |
+Official workflow for medium/large features:
 
-SQLCipher key: 32 random bytes generated via `SecureRandom`, stored encrypted in `EncryptedSharedPreferences` backed by Android Keystore (`DatabaseKeyProvider.kt`). Uses `SupportOpenHelperFactory` (SQLCipher 4.x API — package is `net.zetetic.database.sqlcipher`, not the old `net.sqlcipher.database`).
+`PRD -> SPEC -> Conditional reviews -> External design -> Dev Plan -> Implementation -> Validation -> Final review`
 
-## Non-Negotiables
+Light workflow for small localized tasks:
 
-- **On-device only** — no network calls for health data. CISO must sign off before any external transmission.
-- **Encrypt at rest** — Room + SQLCipher for all biometric or derived health fields. Never plain SQLite.
-- **LGPD compliance** — explicit, granular, revocable consent per data type (steps, sleep, heart rate, exercise). Consent record stored with timestamp + policy version.
-- **No telemetry SDKs** — Firebase Analytics, Crashlytics, Mixpanel, Amplitude, AdMob are banned in the MVP.
-- **Health Connect permissions** — `READ_STEPS`, `READ_SLEEP`, `READ_HEART_RATE`, `READ_EXERCISE`. Read-only. No background reads in MVP.
+`Mini-spec -> Implementation -> Validation`
 
-## Visual System
+Document locations:
+- PRD: `docs/product/prd/<feature>.md`
+- SPEC: `docs/specs/<feature>-spec.md`
+- Design prompt: `docs/design/prompts/<feature>-design-prompt.md`
+- Design handoff: `docs/design/handoffs/<feature>-design-handoff.md`
+- Dev plan: `docs/dev-plans/<feature>-plan.md`
+- Validation: `docs/validation/<feature>-validation.md`
 
-**Fonte da verdade:** `docs/design/visual-system-v1.md`. Toda decisão de cor, tipografia, espaço e copy de UI deve vir desse documento. Specs textuais (`docs/specs/*`) descrevem **o quê**; o visual system descreve **como deve parecer**.
+Conditional review rules:
+- Security/privacy review is required for Health Connect, consent, Room/SQLCipher, export/delete data, logs, permissions, dependencies or any health data.
+- Infra/build review is required for Gradle, CI/CD, signing, R8/ProGuard, modules, dependencies or build performance.
+- Product/UX review is required for onboarding, dashboard, consent copy, error/empty states, MVP scope or flow decisions.
+- Visual review/design handoff is required for new screens and large UI changes.
 
-**Tokens em código:** `core/ui/src/main/kotlin/com/healthinsights/core/ui/theme/Theme.kt` — `HealthInsightsTheme { … }` envolve toda screen. Use `MaterialTheme.colorScheme.*`, nunca `Color(0xFF…)` hardcoded em features.
+Traditional backend load tests are not required while the app remains fully on-device with no shared infrastructure. Use local performance validation instead: cold start, Health Connect read time, Room/SQLCipher query time, memory, battery and behavior on mid-range devices.
 
-**Mockups de referência:** `docs/design/mockups/App.html` — abre no navegador, mostra todas as 6 telas + estados. Depende dos arquivos na mesma pasta (`app-screens.jsx`, `screens.jsx`, `tokens.css`, etc.). Cite a variante no PR (ex: "Welcome A — Apple Health minimal").
+## Testing
 
-**Princípios anti-slop (linha vermelha):**
-1. O número primeiro — headlines liderados por dado, não por adjetivos.
-2. Sinal explícito (+/− e cor semântica `deficit`/`surplus`/`maintain`).
-3. Background neutro `#FAFAF7`. **Banidos:** gradientes saturados, círculos decorativos, roxo `#4F3D8A`.
-4. Microcopy de privacidade visível acima de todo CTA crítico.
-5. Sem ícones decorativos genéricos, sem emojis. Só dado, gráfico ou stripe de placeholder.
+Tests are required for production changes.
 
+Expected checks before handoff:
+- `gradlew.bat ktlintCheck`
+- `gradlew.bat testDebugUnitTest`
+- `gradlew.bat :app:assembleDebug`
 
-## Test Strategy
+Use instrumented tests for behavior that requires Android/native runtime, such as real SQLCipher encryption.
 
-Tests are a pre-condition for merging.
+## Agent Coordination
 
-| Level | Target | Tools |
-|---|---|---|
-| Unit (domain + viewmodel) | ≥ 85% coverage | JUnit4, MockK, kotlinx-coroutines-test, Robolectric |
-| Integration (data layer) | 100% DAOs + repos | Room in-memory DB, Health Connect fakes |
-| UI (Compose) | Happy path + empty + error per screen | `createComposeRule`, Robolectric |
-| Instrumented (E2E) | 1 test per critical flow | Espresso + UI Automator |
+Claude Code and Codex share this repository. Keep `CLAUDE.md` and `AGENTS.md` mirrored so both agents operate from the same assumptions.
 
-Security-specific tests required:
-- SQLCipher database does not open with empty or wrong key.
-- Logs never contain numeric HR, steps, or sleep values (regex check on log capture).
+When a task touches health data, consent, storage, permissions or SDKs, apply the privacy/security rules above before implementation.
 
-## CI Pipeline (GitHub Actions)
-
-PR gate (cheap checks first):
-```
-lint (ktlint + detekt) → unit tests + kover → android lint → build debug APK → UI tests (emulator API 34)
-```
-
-`ci-main.yml` builds and signs the release AAB on merge to `main`. Branch protection on `main` requires all 5 jobs green.
-
-## AI Agent Team
-
-Agents live in `.claude/agents/`. Invoke them before committing to decisions in their domain.
-
-| Agent | Domain |
-|---|---|
-| `ceo-health-insights` | Feature scope, roadmap, strategic trade-offs |
-| `cto-health-insights` | Architecture, library selection, API integration |
-| `cpo-health-insights` | Screen specs, user flows, UX decisions |
-| `cmo-health-insights` | Copy, App Store positioning, target audience |
-| `cfo-health-insights` | Monetization, pricing, SDK cost |
-| `ciso-health-insights` | Health data storage, consent flows, third-party SDKs |
-| `android-engineer-health-insights` | Kotlin/Compose implementation |
-| `qa-test-engineer-health-insights` | Test strategy, coverage, fixtures |
-| `data-insights-designer-health-insights` | Insight rules, thresholds, copy templates |
-| `security-reviewer-health-insights` | Code-level security review on PRs |
-| `release-engineer-health-insights` | CI/CD, GitHub Actions, versioning |
-| `compliance-docs-health-insights` | Privacy policy, Data Safety form, LGPD docs |
-
-**Default rule**: any decision touching health data → invoke CISO first.
-
-Agent memory is stored per-agent in `.claude/agent-memory/<agent-name>/`.
-
-## Key Docs
-
-- `docs/MVP_PLAN.md` — Full MVP scope, architecture decisions, test strategy, rejected features
-- `docs/design/visual-system-v1.md` — Tokens, tipografia, paleta, componentes — fonte da verdade visual
-- `docs/design/mockups/App.html` — Mockups interativos de todas as 6 telas (abrir no navegador)
-- `docs/design/mockups/app-screens.jsx` — Código JSX das telas T2–T6 + Settings (referência de implementação)
-- `docs/specs/onboarding-spec-v1.0.md` — Onboarding screen-by-screen spec
-- `docs/legal/consent-copy-v1.1.md` — Final consent copy (CISO-approved)
-- `docs/legal/POLITICA_DE_PRIVACIDADE.md` — Privacy policy (PT-BR)
-- `docs/BACKLOG.md` — Feature backlog
-- `docs/CI_SETUP.md` — GitHub repo + secrets setup guide
-- `Reunioes/` — Meeting notes and pending tasks by date
-
-## Current Implementation Status (2026-05-07)
-
-| Sprint | Stories | Status |
-|---|---|---|
-| EP-01-01 (foundation) | CI/CD, arquitetura multi-módulo, WelcomeScreen | ✅ merged to main |
-| Sprint 0 (domain) | S0.1 BMR usecases, S0.2 HC data reads, S0.3 DailyCaloricBalance | ✅ merged to main (PR #3) |
-| Sprint 1 (onboarding UI) | S1.1 ProfileScreen, S1.2 GoalScreen, S1.3 ConsentScreen, S1.4 ConnectingScreen, S1.5 NavGraph | ⏳ next — 1 story per session |
-| Sprint 2 (dashboard) | S2.1 DashboardScreen + ViewModel, S2.2 empty/error states | ⏳ blocked on Sprint 1 |
-| Sprint 3 (settings/LGPD) | S3.1–S3.5 Settings + export + delete-all + privacy policy | ⏳ blocked on Sprint 2 |
-
-**Next action:** start a new session for S1.1 (ProfileScreen only). Prompt: "Implementa S1.1 — ProfileScreen (T2). Leia docs/design/mockups/app-screens.jsx (função ProfileScreen) e docs/design/visual-system-v1.md. Use HealthInsightsTheme de core:ui. Testes obrigatórios."
+Current next work should come from `docs/ROADMAP.md` and `docs/BACKLOG.md`, not from historical meeting notes.

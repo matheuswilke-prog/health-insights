@@ -4,6 +4,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import com.healthinsights.core.domain.healthconnect.HealthConnectAvailability
 import com.healthinsights.core.domain.healthconnect.HealthDataPermission
+import com.healthinsights.core.domain.repository.HealthDataReadResult
 import com.healthinsights.feature.healthconnect.repository.HealthConnectRepositoryImpl
 import io.mockk.coEvery
 import io.mockk.every
@@ -13,6 +14,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Instant
 
 class HealthConnectRepositoryImplTest {
 
@@ -78,13 +80,10 @@ class HealthConnectRepositoryImplTest {
     }
 
     @Test
-    fun getGrantedPermissions_excludesPermissionWhenOnlyOneOfItsStringsGranted() = runTest {
-        // CALORIES_BURNED needs both TOTAL and ACTIVE; granting only one must exclude it.
-        val totalOnly = setOf(
-            HealthConnectManager.permissionStringsFor(HealthDataPermission.CALORIES_BURNED).first(),
-        )
+    fun getGrantedPermissions_excludesPermissionWhenItsStringIsMissing() = runTest {
+        val weightOnly = HealthConnectManager.permissionStringsFor(HealthDataPermission.WEIGHT)
         every { manager.client } returns mockClient
-        coEvery { mockPermissionController.getGrantedPermissions() } returns totalOnly
+        coEvery { mockPermissionController.getGrantedPermissions() } returns weightOnly
 
         val result = repo.getGrantedPermissions()
 
@@ -97,5 +96,23 @@ class HealthConnectRepositoryImplTest {
         coEvery { mockPermissionController.getGrantedPermissions() } returns emptySet()
 
         assertTrue(repo.getGrantedPermissions().isEmpty())
+    }
+
+    @Test
+    fun getActiveCaloriesBurnedResult_returnsUnavailableWhenClientIsNull() = runTest {
+        every { manager.client } returns null
+
+        val result = repo.getActiveCaloriesBurnedResult(Instant.EPOCH, Instant.EPOCH.plusSeconds(60))
+
+        assertEquals(HealthDataReadResult.Unavailable, result)
+    }
+
+    @Test
+    fun getNutritionCaloriesResult_returnsUnavailableWhenClientIsNull() = runTest {
+        every { manager.client } returns null
+
+        val result = repo.getNutritionCaloriesResult(Instant.EPOCH, Instant.EPOCH.plusSeconds(60))
+
+        assertEquals(HealthDataReadResult.Unavailable, result)
     }
 }

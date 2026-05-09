@@ -4,6 +4,7 @@ import com.healthinsights.core.domain.model.BalanceStatus
 import com.healthinsights.core.domain.model.DailyCaloricBalance
 import com.healthinsights.core.domain.model.DailyCaloricBalance.Companion.MAINTAIN_THRESHOLD_KCAL
 import com.healthinsights.core.domain.repository.HealthConnectRepository
+import com.healthinsights.core.domain.repository.HealthDataReadResult
 import com.healthinsights.core.domain.repository.UserProfileRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -47,14 +48,19 @@ class GetDailyBalanceUseCase
 
                 val bmr = calculateBmr(profile)
                 val target = calculateDailyTarget(profile)
-                val activeBurned = healthConnectRepository.getActiveCaloriesBurned(dayStart, dayEnd).toInt()
-                val intake = healthConnectRepository.getNutritionCalories(dayStart, dayEnd).toInt()
+                val activeBurnedResult = healthConnectRepository.getActiveCaloriesBurnedResult(dayStart, dayEnd)
+                val intakeResult = healthConnectRepository.getNutritionCaloriesResult(dayStart, dayEnd)
+
+                val activeBurned = activeBurnedResult.kcalOrZero().toInt()
+                val intake = intakeResult.kcalOrZero().toInt()
 
                 val balance = intake - (bmr + activeBurned)
 
                 val status: BalanceStatus =
                     when {
-                        intake == 0 -> BalanceStatus.NoIntakeData
+                        activeBurnedResult !is HealthDataReadResult.Success ||
+                            intakeResult !is HealthDataReadResult.Success -> BalanceStatus.HealthConnectUnavailable
+                        intake <= 0 -> BalanceStatus.NoIntakeData
                         balance < -MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Deficit
                         balance > MAINTAIN_THRESHOLD_KCAL -> BalanceStatus.Surplus
                         else -> BalanceStatus.Maintain
@@ -72,4 +78,13 @@ class GetDailyBalanceUseCase
                     ),
                 )
             }
+
+        private fun HealthDataReadResult.kcalOrZero(): Float {
+            return when (this) {
+                is HealthDataReadResult.Success -> kcal
+                is HealthDataReadResult.Unavailable,
+                is HealthDataReadResult.Error,
+                -> 0f
+            }
+        }
     }

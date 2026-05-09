@@ -89,11 +89,17 @@ class ConnectingViewModel @Inject constructor(
      * @param granted the set of HC permission strings that were actually granted.
      */
     fun onPermissionResult(granted: Set<String>) {
-        val total = _permissionsToRequest.value.size
-        _uiState.value = ConnectingUiState.PermissionResult(
-            grantedCount = granted.size,
-            totalRequested = total,
-        )
+        viewModelScope.launch {
+            val requested = _permissionsToRequest.value
+            val effectiveGranted = runCatching {
+                healthConnectManager.getGrantedPermissionStrings()
+            }.getOrDefault(granted)
+            val grantedRequested = effectiveGranted.intersect(requested)
+            _uiState.value = ConnectingUiState.PermissionResult(
+                grantedCount = grantedRequested.size,
+                totalRequested = requested.size,
+            )
+        }
     }
 
     /** Puts the state back to ReadyToRequest so the dialog can be re-launched. */

@@ -13,10 +13,13 @@ android {
 }
 
 dependencies {
+    implementation(project(":feature:dashboard"))
     implementation(project(":feature:health-connect"))
     implementation(project(":feature:onboarding"))
+    implementation(project(":feature:settings"))
     implementation(project(":core:database"))
     implementation(project(":core:domain"))
+    implementation(project(":core:ui"))
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)

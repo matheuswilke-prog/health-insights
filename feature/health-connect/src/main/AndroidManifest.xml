@@ -6,7 +6,6 @@
         These must be present for the OS to surface the permission grant dialog.
         Permissions align with privacy-policy-v1.2 Section 3 and consent-copy-v1.1.
     -->
-    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_NUTRITION" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
