@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -33,8 +34,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,15 +55,28 @@ import com.healthinsights.core.ui.theme.HealthInsightsTheme
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenHealthConnect: () -> Unit,
+    onExportDataReady: (fileName: String, content: String) -> Unit,
+    onLocalDataDeleted: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SettingsEvent.ExportReady -> onExportDataReady(event.fileName, event.content)
+                SettingsEvent.LocalDataDeleted -> onLocalDataDeleted()
+            }
+        }
+    }
+
     SettingsScreenContent(
         uiState = uiState,
         onBack = onBack,
         onOpenHealthConnect = onOpenHealthConnect,
+        onExportData = viewModel::onExportDataClick,
+        onDeleteLocalData = viewModel::onConfirmDeleteLocalData,
         modifier = modifier,
     )
 }
@@ -68,8 +86,12 @@ internal fun SettingsScreenContent(
     uiState: SettingsUiState,
     onBack: () -> Unit,
     onOpenHealthConnect: () -> Unit,
+    onExportData: () -> Unit,
+    onDeleteLocalData: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
@@ -82,10 +104,22 @@ internal fun SettingsScreenContent(
                 is SettingsUiState.Content -> SettingsContent(
                     model = uiState.model,
                     onOpenHealthConnect = onOpenHealthConnect,
+                    onExportData = onExportData,
+                    onDeleteLocalDataClick = { showDeleteConfirmation = true },
                 )
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
+    }
+
+    if (showDeleteConfirmation) {
+        DeleteLocalDataDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                showDeleteConfirmation = false
+                onDeleteLocalData()
+            },
+        )
     }
 }
 
@@ -136,6 +170,8 @@ private fun LoadingState() {
 private fun ColumnScope.SettingsContent(
     model: SettingsUiModel,
     onOpenHealthConnect: () -> Unit,
+    onExportData: () -> Unit,
+    onDeleteLocalDataClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -148,6 +184,11 @@ private fun ColumnScope.SettingsContent(
         IntroSection()
         ConsentSection(consents = model.consents)
         HealthConnectSection(onOpenHealthConnect = onOpenHealthConnect)
+        DataManagementSection(
+            model = model,
+            onExportData = onExportData,
+            onDeleteLocalDataClick = onDeleteLocalDataClick,
+        )
         PrivacyPolicySection()
         Spacer(Modifier.height(8.dp))
     }
@@ -282,6 +323,120 @@ private fun HealthConnectSection(
 }
 
 @Composable
+private fun DataManagementSection(
+    model: SettingsUiModel,
+    onExportData: () -> Unit,
+    onDeleteLocalDataClick: () -> Unit,
+) {
+    SettingsCard {
+        SectionLabel("Dados locais")
+        Text(
+            text = "A exportacao cria um arquivo JSON com perfil, objetivo, meta calorica e consentimentos. " +
+                "Depois de salvar, esse arquivo fica sob seu controle fora do banco criptografado do app.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Button(
+            onClick = onExportData,
+            enabled = !model.exportInProgress && !model.deleteInProgress,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .height(56.dp)
+                .testTag("export_data_button"),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        ) {
+            Text(
+                text = if (model.exportInProgress) "Preparando..." else "Exportar dados",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            )
+        }
+        Text(
+            text = "Apagar dados locais remove perfil, meta e consentimentos deste app. " +
+                "Os dados originais do Health Connect continuam no Android.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 20.dp),
+        )
+        Button(
+            onClick = onDeleteLocalDataClick,
+            enabled = !model.exportInProgress && !model.deleteInProgress,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .height(56.dp)
+                .testTag("delete_local_data_button"),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
+        ) {
+            Text(
+                text = if (model.deleteInProgress) "Apagando..." else "Apagar dados locais",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            )
+        }
+        model.errorMessage?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeleteLocalDataDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Apagar dados locais?")
+        },
+        text = {
+            Text(
+                text = "Perfil, meta calorica e consentimentos serao apagados deste app. " +
+                    "Dados originais no Health Connect nao serao apagados.",
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+                modifier = Modifier.testTag("confirm_delete_local_data_button"),
+            ) {
+                Text("Apagar")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                modifier = Modifier.testTag("cancel_delete_local_data_button"),
+            ) {
+                Text("Cancelar")
+            }
+        },
+    )
+}
+
+@Composable
 private fun PrivacyPolicySection() {
     SettingsCard {
         SectionLabel("Política de privacidade")
@@ -367,6 +522,8 @@ private fun SettingsScreenPreview() {
             ),
             onBack = {},
             onOpenHealthConnect = {},
+            onExportData = {},
+            onDeleteLocalData = {},
         )
     }
 }

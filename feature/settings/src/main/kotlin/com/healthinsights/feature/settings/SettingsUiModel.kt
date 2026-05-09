@@ -10,6 +10,9 @@ data class ConsentItemUiModel(
 
 data class SettingsUiModel(
     val consents: List<ConsentItemUiModel>,
+    val exportInProgress: Boolean = false,
+    val deleteInProgress: Boolean = false,
+    val errorMessage: String? = null,
 )
 
 sealed interface SettingsUiState {
@@ -18,4 +21,13 @@ sealed interface SettingsUiState {
     data class Content(
         val model: SettingsUiModel,
     ) : SettingsUiState
+}
+
+sealed interface SettingsEvent {
+    data class ExportReady(
+        val fileName: String,
+        val content: String,
+    ) : SettingsEvent
+
+    data object LocalDataDeleted : SettingsEvent
 }

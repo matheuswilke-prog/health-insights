@@ -21,8 +21,10 @@ Concluido:
 - Alinhamento documental para `docs/ROADMAP.md`.
 - Dashboard MVP implementado e validado por checks locais.
 - Settings minima de privacidade implementada e validada para alpha local.
+- Exportacao de dados locais implementada e validada por checks locais.
+- Exclusao de dados locais implementada e validada por checks locais.
 
-Proxima frente: fechar as funcoes LGPD antes de release: exportar dados e apagar dados locais.
+Proxima frente: hardening pre-alpha e validacao manual em emulador/aparelho.
 
 Pendente para validacao manual antes de alpha:
 - Reexecutar fluxo interativo de permissoes Health Connect no emulador/aparelho.
@@ -194,6 +196,8 @@ Aceite:
 
 ### EP-04-02 - Exportar Dados
 
+Status: feito para alpha local; manter validacao manual antes de release.
+
 Prioridade: P0 antes de release.
 
 Aceite:
@@ -202,6 +206,8 @@ Aceite:
 - Teste cobre formato e ausencia de campos nao coletados.
 
 ### EP-04-03 - Apagar Dados Locais
+
+Status: feito para alpha local; manter validacao manual antes de release.
 
 Prioridade: P0 antes de release.
 
@@ -237,12 +243,12 @@ Futuro:
 7. EP-03-03.
 8. EP-03-04.
 9. EP-04-01.
+10. EP-04-02.
+11. EP-04-03.
 
 ### Proximos passos
 
-1. EP-04-02 - Exportar Dados.
-2. EP-04-03 - Apagar Dados Locais.
-3. Hardening pre-alpha: validacao manual de permissoes/estados, revisao de seguranca/privacidade e checks finais.
+1. Hardening pre-alpha: validacao manual de permissoes/estados, revisao de seguranca/privacidade e checks finais.
 
 ## Definition of Done Padrao
 

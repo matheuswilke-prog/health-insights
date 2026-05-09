@@ -4,6 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,10 +26,12 @@ import com.healthinsights.feature.onboarding.ProfileFormData
 import com.healthinsights.feature.onboarding.ProfileScreen
 import com.healthinsights.feature.onboarding.WelcomeScreen
 import com.healthinsights.feature.settings.SettingsScreen
+import java.io.IOException
 
 private const val HEALTH_CONNECT_PACKAGE = "com.google.android.apps.healthdata"
 private const val PLAY_STORE_URL =
     "https://play.google.com/store/apps/details?id=$HEALTH_CONNECT_PACKAGE"
+private const val EXPORT_MIME_TYPE = "application/json"
 
 @Suppress("LongMethod") // NavHost functions enumerate all routes; structural length is expected.
 @Composable
@@ -41,6 +46,16 @@ internal fun HealthInsightsNavHost(
     var profileData by remember { mutableStateOf<ProfileFormData?>(null) }
     var selectedGoal by remember { mutableStateOf(UserGoal.MAINTAIN) }
     val context = LocalContext.current
+    var pendingExportContent by remember { mutableStateOf<String?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(EXPORT_MIME_TYPE),
+    ) { uri ->
+        val content = pendingExportContent
+        pendingExportContent = null
+        if (uri != null && content != null) {
+            writeExportFile(context, uri, content)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -118,6 +133,16 @@ internal fun HealthInsightsNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenHealthConnect = { openHealthConnect(context) },
+                onExportDataReady = { fileName, content ->
+                    pendingExportContent = content
+                    exportLauncher.launch(fileName)
+                },
+                onLocalDataDeleted = {
+                    onOnboardingInvalid()
+                    navController.navigate(ROUTE_WELCOME) {
+                        popUpTo(ROUTE_DASHBOARD) { inclusive = true }
+                    }
+                },
             )
         }
     }
@@ -130,5 +155,20 @@ private fun openHealthConnect(context: Context) {
         context.startActivity(launchIntent ?: fallbackIntent)
     } catch (_: ActivityNotFoundException) {
         context.startActivity(fallbackIntent)
+    }
+}
+
+private fun writeExportFile(
+    context: Context,
+    uri: Uri,
+    content: String,
+) {
+    try {
+        context.contentResolver.openOutputStream(uri)?.use { output ->
+            output.write(content.toByteArray(Charsets.UTF_8))
+        } ?: throw IOException("Unable to open export destination")
+        Toast.makeText(context, "Dados exportados", Toast.LENGTH_SHORT).show()
+    } catch (_: IOException) {
+        Toast.makeText(context, "Nao foi possivel salvar o arquivo", Toast.LENGTH_SHORT).show()
     }
 }

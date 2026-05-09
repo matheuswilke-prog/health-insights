@@ -28,6 +28,8 @@ class SettingsScreenTest {
                 uiState = SettingsUiState.Content(sampleModel),
                 onBack = {},
                 onOpenHealthConnect = {},
+                onExportData = {},
+                onDeleteLocalData = {},
             )
         }
 
@@ -43,19 +45,47 @@ class SettingsScreenTest {
     fun actions_invokeCallbacks() {
         var backCount = 0
         var healthConnectCount = 0
+        var exportCount = 0
+        var deleteCount = 0
         composeRule.setContent {
             SettingsScreenContent(
                 uiState = SettingsUiState.Content(sampleModel),
                 onBack = { backCount++ },
                 onOpenHealthConnect = { healthConnectCount++ },
+                onExportData = { exportCount++ },
+                onDeleteLocalData = { deleteCount++ },
             )
         }
 
         composeRule.onNodeWithContentDescription("Voltar").performClick()
         composeRule.onNodeWithTag("open_health_connect_button").performClick()
+        composeRule.onNodeWithTag("export_data_button").performScrollTo().performClick()
+        composeRule.onNodeWithTag("delete_local_data_button").performScrollTo().performClick()
+        composeRule.onNodeWithTag("confirm_delete_local_data_button").performClick()
 
         assertEquals(1, backCount)
         assertEquals(1, healthConnectCount)
+        assertEquals(1, exportCount)
+        assertEquals(1, deleteCount)
+    }
+
+    @Test
+    fun delete_cancelDoesNotInvokeCallback() {
+        var deleteCount = 0
+        composeRule.setContent {
+            SettingsScreenContent(
+                uiState = SettingsUiState.Content(sampleModel),
+                onBack = {},
+                onOpenHealthConnect = {},
+                onExportData = {},
+                onDeleteLocalData = { deleteCount++ },
+            )
+        }
+
+        composeRule.onNodeWithTag("delete_local_data_button").performScrollTo().performClick()
+        composeRule.onNodeWithTag("cancel_delete_local_data_button").performClick()
+
+        assertEquals(0, deleteCount)
     }
 
     private val sampleModel = SettingsUiModel(
